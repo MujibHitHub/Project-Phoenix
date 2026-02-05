@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Academic Discussion - Project Phoenix</title>
+    <link rel="stylesheet" href="styles/task-simulation.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="header-toolbar">
+        <div class="logo-section">Project Phoenix</div>
+        <div class="header-actions">
+            <button class="btn-next-header" id="continueBtn">
+                Next
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="section-toolbar">
+        <div class="section-info">Writing | Question 2 of 2</div>
+        <div class="timer-area">
+            <div class="toggle-link" id="toggleTime">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                Hide Time
+            </div>
+            <div class="time-value" id="timerValue">10:00</div>
+        </div>
+    </div>
+
+    <div class="task-container-wrapper">
+        <div id="task-content-area">
+            <div class="scenario-panel">
+                <div class="task-instruction">
+                    <p id="taskIntro">Your professor is teaching a class on <span id="topicName">social studies</span>.
+                        Write a post responding to the professor's Question.</p>
+                    <p><strong>In your response, you should do the following:</strong></p>
+                    <ul class="instruction-bullets">
+                        <li>Express and support your opinion.</li>
+                        <li>Make a contribution to the discussion in your own words.</li>
+                    </ul>
+                    <p>An effective response will contain at least 100 words.</p>
+                </div>
+
+                <div class="professor-section">
+                    <img src="images/professor.jpg" class="professor-image" alt="Professor">
+                </div>
+
+                <div class="scenario-text" id="profPrompt">Loading instructions...</div>
+            </div>
+
+            <div class="response-panel">
+                <div class="discussion-container">
+                    <div class="discussion-post">
+                        <div class="author-info">
+                            <img src="images/claire.jpg" class="author-avatar" alt="Claire">
+                        </div>
+                        <div class="post-content" id="clairePost">Loading Claire's post...</div>
+                    </div>
+                    <div class="discussion-post">
+                        <div class="author-info">
+                            <img src="images/alex.jpg" class="author-avatar" alt="Alex">
+                        </div>
+                        <div class="post-content" id="alexPost">Loading Alex's post...</div>
+                    </div>
+                </div>
+
+                <div class="editor-toolbar">
+                    <div class="editor-btn-group">
+                        <button class="editor-btn btn-active" onclick="document.execCommand('cut')">Cut</button>
+                        <button class="editor-btn btn-inactive"
+                            onclick="navigator.clipboard.readText().then(t => document.execCommand('insertText', false, t))">Paste</button>
+                        <button class="editor-btn btn-inactive" onclick="document.execCommand('undo')">Undo</button>
+                        <button class="editor-btn btn-inactive" onclick="document.execCommand('redo')">Redo</button>
+                    </div>
+                    <div class="word-count-display" id="wordCountToggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                        </svg>
+                        Hide Word Count: <span id="wordCountValue">0</span>
+                    </div>
+                </div>
+                <textarea class="response-editor" id="responseEditor" spellcheck="true"
+                    placeholder="Type your response here..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let time = 600;
+        let timerInterval;
+        const timerVal = document.getElementById('timerValue');
+        const editor = document.getElementById('responseEditor');
+        const wordCountVal = document.getElementById('wordCountValue');
+
+        function startTimer() {
+            timerInterval = setInterval(() => {
+                if (time > 0) {
+                    time--;
+                    let m = Math.floor(time / 60);
+                    let s = time % 60;
+                    timerVal.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                } else {
+                    clearInterval(timerInterval);
+                    timerVal.innerText = "0:00";
+                    // Auto submit
+                    document.getElementById('continueBtn').click();
+                }
+            }, 1000);
+        }
+
+        editor.addEventListener('input', () => {
+            const words = editor.value.trim().split(/\s+/).filter(w => w.length > 0);
+            wordCountVal.innerText = words.length;
+        });
+
+        document.getElementById('toggleTime').onclick = () => {
+            const isHidden = timerVal.style.visibility === 'hidden';
+            timerVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            document.getElementById('toggleTime').innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                ${isHidden ? 'Hide Time' : 'Show Time'}
+            `;
+        };
+
+        document.getElementById('wordCountToggle').onclick = () => {
+            const isHidden = wordCountVal.style.visibility === 'hidden';
+            wordCountVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            document.getElementById('wordCountToggle').innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                ${isHidden ? 'Hide Word Count' : 'Show Word Count'}: <span id="wordCountValue">${wordCountVal.innerText}</span>
+            `;
+            // Re-assign wordCountVal since we just overwrote the span
+            setTimeout(() => {
+                const newVal = document.getElementById('wordCountValue');
+                newVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            }, 0);
+        };
+
+        const isFullTest = new URLSearchParams(window.location.search).get('testMode') === 'full';
+
+        async function loadDiscussion() {
+            try {
+                let s = "";
+
+                // 1. Check if scenario is already pre-generated in sessionStorage
+                const preGenerated = sessionStorage.getItem('fullTest_academic_scenario');
+                if (isFullTest && preGenerated) {
+                    s = preGenerated;
+                    console.log("Using pre-generated academic scenario");
+                } else {
+                    const currentUser = localStorage.getItem('username') || 'Guest';
+                    // Fetch AI scenario if in full test mode
+                    const url = isFullTest ?
+                        `/api/scenarios/generate-ai?type=academic&username=${encodeURIComponent(currentUser)}` :
+                        '/api/scenarios/academic';
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    if (data.success) {
+                        s = isFullTest ? data.scenario : data.scenarios[0];
+                    } else {
+                        throw new Error("Failed to load discussion data");
+                    }
+                }
+
+                if (s) {
+                    // Basic split for demo - refine if needed
+                    const lines = s.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                    let prof = [], leo = [], sofia = [], current = 'prof';
+                    let topic = '';
+
+                    // Try to find topic in the first line if it looks like one
+                    if (lines[0] && !lines[0].includes(':') || lines[0].toLowerCase().startsWith('topic:')) {
+                        topic = lines[0].replace(/topic:/i, '').trim();
+                        lines.shift(); // Remove topic line from further processing
+                    } else if (lines[0] && lines[0].includes(':') && !lines[0].toLowerCase().startsWith('topic:')) {
+                        // Check if first line is professor prompt or topic
+                        const firstLine = lines[0];
+                        const colonIndex = firstLine.indexOf(':');
+                        const namePart = firstLine.substring(0, colonIndex).toLowerCase();
+                        if (namePart.includes('professor') || namePart.includes('dr.') || namePart.includes('dr ')) {
+                            topic = 'social studies'; // Fallback
+                        } else {
+                            topic = firstLine.trim();
+                            lines.shift();
+                        }
+                    }
+
+                    lines.forEach(l => {
+                        const lower = l.toLowerCase();
+                        if (lower.includes('leo:') || lower.includes('claire:')) {
+                            current = 'leo'; // Map Claire to the first slot
+                        } else if (lower.includes('sofia:') || lower.includes('alex:')) {
+                            current = 'sofia'; // Map Alex to the second slot
+                        }
+
+                        if (current === 'prof') prof.push(l);
+                        else if (current === 'leo') leo.push(l);
+                        else if (current === 'sofia') sofia.push(l);
+                    });
+
+                    // Update dynamic topic
+                    document.getElementById('topicName').innerText = topic || 'social studies';
+                    document.getElementById('profPrompt').innerHTML = prof.join('<br><br>').replace(/Professor:/i, '<strong>Professor:</strong>');
+
+                    // Support both old (Leo/Sofia) and new (Claire/Alex) formats
+                    document.getElementById('clairePost').innerHTML = leo.join('<br>').replace(/Leo:/i, '<strong>Claire:</strong>').replace(/Claire:/i, '<strong>Claire:</strong>');
+                    document.getElementById('alexPost').innerHTML = sofia.join('<br>').replace(/Sofia:/i, '<strong>Alex:</strong>').replace(/Alex:/i, '<strong>Alex:</strong>');
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        document.getElementById('continueBtn').onclick = async () => {
+            const btn = document.getElementById('continueBtn');
+
+            if (isFullTest) {
+                // In full test, just save and move to next step
+                sessionStorage.setItem('fullTest_academic_response', editor.value);
+                sessionStorage.setItem('fullTest_academic_scenario', document.body.innerText);
+                window.parent.postMessage('nextStep', '*');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const res = await fetch('/api/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskType: 'academic',
+                    userResponse: editor.value,
+                    scenario: document.body.innerText
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('lastEvaluation', JSON.stringify(data.evaluation));
+                localStorage.setItem('lastTaskType', 'academic');
+                window.location.href = 'results.html';
+            } else {
+                alert("Evaluation failed. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "Next";
+            }
+        };
+
+        loadDiscussion();
+        startTimer();
+    </script>
+</body>
+
+</html>

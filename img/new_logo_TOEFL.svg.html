@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html class="no-js" dir="ltr" lang="en-us">
+
+<head>
+
+    <meta content="IE=edge" http-equiv="X-UA-Compatible">
+    <meta charset="utf-8">
+    <meta content="width=device-width,initial-scale=1.0" name="viewport">
+    <meta content="notranslate" name="google">
+
+
+    <script src="../../../libs/jquery/dist/jquery.min.js"></script>
+    <script src="https://ibt2-toefl-pt.ets.org/ibt2tcweb/toefl-premium/toefl-premium.js"></script>    
+    <style>
+    .init-loading-indicator {
+        position: absolute;
+        top: 20%;
+        left: 0;
+        right: 0;
+        z-index: 1200;
+        margin: auto;
+    }
+    </style>
+
+</head>
+
+<body style="height: 100%; background-color:#b4b4b4;">
+    <div id="loading-indicator">`
+        <img class="init-loading-indicator"
+             style="position: absolute;top: 20%;left: 0;right: 0;z-index: 1200;margin: auto;"
+             src="https://ibt2-toefl-pt.ets.org/ibt2tcweb/toefl-premium/loading.gif" alt="Page loading, please wait"/>
+    </div>
+
+    <div hidden>
+        <form id="idHiddenForm" method="POST" action="https://ibt2-toefl-pt.ets.org/ibt2tcweb/launch/highstake">
+
+            <!--  <input type="text" id="pgm-tst" name="pgm-tst" value="TEL"> -->
+            <input type="text" id="pgm-tst" name="pgm-tst" value="TEL">
+
+            <input type="text" id="is-review-mode" name="is-review-mode" value="false">
+
+            <!--  <input type="text" id="regsys-id" name="regsys-id" value="RR1"> -->
+            <input type="text" id="regsys-id" name="regsys-id" value="RR1">
+
+            <!--  TODO: replace the site code with STNSIMRP, when available, and suiteSuffix if needed -->
+            <!--  <input type="text" id="dg-select" name="dg-select" value="APCN"> -->
+            <input type="text" id="dg-select" name="dg-select" value="APCN">
+            <input type="text" id="siteSuffix" name="siteSuffix" value="9933">
+
+
+            <input type="text" id="tst-selectpackage" name="tst-selectpackage">
+            <input type="text" id="admin-code" name="admin-code">
+            <input type="text" id="STN-admin-code" name="STN-admin-code">
+            <input type="text" id="reg-id" name="reg-id">
+            <input type="text" id="rp-launch-id" name="rp-launch" value="true">            
+
+        </form>
+    </div>
+<script type="text/javascript" src="https://ibt2-toefl-pt.ets.org/_Incapsula_Resource?SWJIYLWA=719d34d31c8e3a6e6fffd425f7e032f3&amp;ns=1&amp;cb=388379535" async></script></body>
+
+</html>

@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Write an Email - Project Phoenix</title>
+    <link rel="stylesheet" href="styles/task-simulation.css">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="header-toolbar">
+        <div class="logo-section">Project Phoenix</div>
+        <div class="header-actions">
+            <button class="btn-next-header" id="continueBtn">
+                Next
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6-6-6z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <div class="section-toolbar">
+        <div class="section-info">Writing | Question 1 of 2</div>
+        <div class="timer-area">
+            <div class="toggle-link" id="toggleTime">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path
+                        d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                Hide Time
+            </div>
+            <div class="time-value" id="timerValue">10:00</div>
+        </div>
+    </div>
+
+    <div class="task-container-wrapper">
+        <div id="task-content-area">
+            <div class="scenario-panel">
+                <h2 class="task-title">Write an Email</h2>
+                <div class="scenario-text" id="scenarioContent">Loading...</div>
+            </div>
+
+            <div class="response-panel">
+                <div class="task-title">Your Response:</div>
+                <div class="email-meta">
+                    <div><strong>To:</strong> <span id="toField">tutor@university.edu</span></div>
+                    <div><strong>Subject:</strong> <span id="subjectField">Scheduling a Session</span></div>
+                </div>
+
+                <div class="editor-toolbar">
+                    <div class="editor-btn-group">
+                        <button class="editor-btn btn-active" onclick="document.execCommand('cut')">Cut</button>
+                        <button class="editor-btn btn-inactive"
+                            onclick="navigator.clipboard.readText().then(t => document.execCommand('insertText', false, t))">Paste</button>
+                        <button class="editor-btn btn-inactive" onclick="document.execCommand('undo')">Undo</button>
+                        <button class="editor-btn btn-inactive" onclick="document.execCommand('redo')">Redo</button>
+                    </div>
+                    <div class="word-count-display" id="wordCountToggle">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                        </svg>
+                        Hide Word Count: <span id="wordCountValue">0</span>
+                    </div>
+                </div>
+                <textarea class="response-editor" id="responseEditor" spellcheck="true"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let time = 420; // 7 minutes
+        let timerInterval;
+        const timerVal = document.getElementById('timerValue');
+        const editor = document.getElementById('responseEditor');
+        const wordCountVal = document.getElementById('wordCountValue');
+
+        function startTimer() {
+            const startTime = Date.now();
+            const initialTime = time;
+
+            clearInterval(timerInterval); // Clear any existing
+            timerInterval = setInterval(() => {
+                const elapsed = Math.floor((Date.now() - startTime) / 1000);
+                time = initialTime - elapsed;
+
+                if (time >= 0) {
+                    let m = Math.floor(time / 60);
+                    let s = time % 60;
+                    timerVal.innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
+                } else {
+                    clearInterval(timerInterval);
+                    timerVal.innerText = "0:00";
+                    // Auto submit
+                    document.getElementById('continueBtn').click();
+                }
+            }, 1000);
+        }
+
+        editor.addEventListener('input', () => {
+            const words = editor.value.trim().split(/\s+/).filter(w => w.length > 0);
+            wordCountVal.innerText = words.length;
+        });
+
+        document.getElementById('toggleTime').onclick = () => {
+            const isHidden = timerVal.style.visibility === 'hidden';
+            timerVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            document.getElementById('toggleTime').innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                ${isHidden ? 'Hide Time' : 'Show Time'}
+            `;
+        };
+
+        document.getElementById('wordCountToggle').onclick = () => {
+            const isHidden = wordCountVal.style.visibility === 'hidden';
+            wordCountVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            document.getElementById('wordCountToggle').innerHTML = `
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z" />
+                </svg>
+                ${isHidden ? 'Hide Word Count' : 'Show Word Count'}: <span id="wordCountValue">${wordCountVal.innerText}</span>
+            `;
+            // Re-assign wordCountVal since we just overwrote the span
+            setTimeout(() => {
+                const newVal = document.getElementById('wordCountValue');
+                newVal.style.visibility = isHidden ? 'visible' : 'hidden';
+            }, 0);
+        };
+
+        const isFullTest = new URLSearchParams(window.location.search).get('testMode') === 'full';
+
+        async function loadScenario() {
+            try {
+                let s = "";
+
+                // 1. Check if scenario is already pre-generated in sessionStorage
+                const preGenerated = sessionStorage.getItem('fullTest_email_scenario');
+                if (isFullTest && preGenerated) {
+                    s = preGenerated;
+                    console.log("Using pre-generated email scenario");
+                } else {
+                    const currentUser = localStorage.getItem('username') || 'Guest';
+                    // Fetch AI scenario if in full test mode, otherwise normal scenario
+                    const url = isFullTest ?
+                        `/api/scenarios/generate-ai?type=email&username=${encodeURIComponent(currentUser)}` :
+                        '/api/scenarios/email';
+                    const res = await fetch(url);
+                    const data = await res.json();
+                    if (data.success) {
+                        s = isFullTest ? data.scenario : data.scenarios[0];
+                    } else {
+                        throw new Error("Failed to load scenario data");
+                    }
+                }
+
+                if (s) {
+                    // 1. Remove "Scenario:" from the beginning
+                    s = s.replace(/^Scenario:\s*/i, '');
+
+                    // Split into scenario and task parts
+                    const taskMarker = /Task:\s*/i;
+                    const parts = s.split(taskMarker);
+
+                    let scenarioPart = parts[0].trim();
+                    let taskPart = parts[1] || '';
+
+                    // 2. Format the Task part
+                    if (taskPart) {
+                        // Change "In your email, you should:" to "In your email, do the following."
+                        taskPart = taskPart.replace(/In your email, you should:/i, 'In your email, do the following.');
+
+                        // Split task part into lines to find instructions and bullets
+                        const lines = taskPart.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+                        if (lines.length > 0) {
+                            // First line is the instruction (bold it)
+                            const instruction = `<strong>${lines[0]}</strong>`;
+
+                            // Remaining lines are bullets
+                            const bullets = lines.slice(1).map(l => `<li>${l}</li>`).join('');
+                            const bulletList = `<ul class="instruction-bullets">${bullets}</ul>`;
+
+                            // 3. Add closing text
+                            const closing = `<p>Write as much as you can and in complete sentences.</p>`;
+
+                            document.getElementById('scenarioContent').innerHTML = `
+                                <div class="scenario-text">${scenarioPart}</div>
+                                <br>
+                                <div class="task-instruction">
+                                    ${instruction}
+                                    ${bulletList}
+                                    ${closing}
+                                </div>
+                            `;
+                        }
+                    } else {
+                        // Fallback if no "Task:" marker found
+                        document.getElementById('scenarioContent').innerHTML = s.replace(/\n/g, '<br>');
+                    }
+                }
+            } catch (e) {
+                document.getElementById('scenarioContent').innerText = "Failed to load scenario.";
+            }
+        }
+
+        document.getElementById('continueBtn').onclick = async () => {
+            const btn = document.getElementById('continueBtn');
+
+            if (isFullTest) {
+                // In full test, just save and move to next step
+                sessionStorage.setItem('fullTest_email_response', editor.value);
+                sessionStorage.setItem('fullTest_email_scenario', document.getElementById('scenarioContent').innerText);
+                window.parent.postMessage('nextStep', '*');
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const res = await fetch('/api/evaluate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    taskType: 'email',
+                    userResponse: editor.value,
+                    scenario: document.getElementById('scenarioContent').innerText
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                localStorage.setItem('lastEvaluation', JSON.stringify(data.evaluation));
+                localStorage.setItem('lastTaskType', 'email');
+                window.location.href = 'results.html';
+            } else {
+                alert("Evaluation failed. Please try again.");
+                btn.disabled = false;
+                btn.innerText = "Next";
+            }
+        };
+
+        loadScenario();
+        startTimer();
+    </script>
+</body>
+
+</html>

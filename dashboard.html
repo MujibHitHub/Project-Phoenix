@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Phoenix | Dashboard</title>
+    <link rel="stylesheet" href="styles/dashboard.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Header -->
+        <header class="dashboard-header">
+            <div class="brand-section">
+                <div class="logo-icon"></div>
+                <h1>Project Phoenix</h1>
+            </div>
+            <div class="user-section">
+                <span class="welcome-text">Welcome, <strong id="username">User</strong></span>
+                <button class="btn-logout" id="logoutBtn">Logout</button>
+            </div>
+        </header>
+
+        <!-- Start New Session Buttons -->
+        <section class="action-section">
+            <button class="btn-start-session" id="startSessionBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14" />
+                </svg>
+                Task Selection
+            </button>
+            <button class="btn-start-session btn-full-test" id="startFullTestBtn">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                </svg>
+                Start Full Test
+            </button>
+        </section>
+
+        <!-- Score Chart Section -->
+        <section class="chart-section">
+            <h2>📊 Score Progress</h2>
+            <div class="chart-container">
+                <canvas id="scoreChart"></canvas>
+            </div>
+            <div class="chart-legend">
+                <div class="legend-item">
+                    <span class="legend-dot" style="background: #077F83;"></span>
+                    <span>Email Tasks</span>
+                </div>
+                <div class="legend-item">
+                    <span class="legend-dot" style="background: #2B8084;"></span>
+                    <span>Academic Discussion</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Progress Tracker Section -->
+        <section class="progress-section" id="progressSection">
+            <h2>📝 Session History</h2>
+            <div class="filter-controls">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="email">Email</button>
+                <button class="filter-btn" data-filter="academic">Academic Discussion</button>
+                <button class="filter-btn" data-filter="full-test">Full Test</button>
+            </div>
+            <div id="sessionsList" class="sessions-list">
+                <!-- Sessions will be dynamically loaded here -->
+                <div class="empty-state">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                        stroke-width="1.5">
+                        <path
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                    <p>No sessions yet</p>
+                    <span>Click "Start New Session" to begin your TOEFL writing practice!</span>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Generation Loading Overlay -->
+    <div id="generationOverlay"
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; color: white;">
+        <div class="spinner"
+            style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #00acc1; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;">
+        </div>
+        <h2 id="genStatus">Generating AI Scenarios...</h2>
+        <p style="margin-top: 10px; opacity: 0.8;">Preparing your personalized TOEFL Full Test</p>
+        <style>
+            @keyframes spin {
+                0% {
+                    transform: rotate(0deg);
+                }
+
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+        </style>
+    </div>
+
+    <script>
+        // Get username from local storage
+        const currentUser = localStorage.getItem('username') || 'Guest';
+        document.getElementById('username').textContent = currentUser;
+
+        let sessionsData = [];
+        let scoreChart = null;
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            localStorage.removeItem('username');
+            window.location.href = 'login.html';
+        });
+
+        // Start New Session
+        document.getElementById('startSessionBtn').addEventListener('click', () => {
+            window.location.href = 'task-selection.html';
+        });
+
+        // Start Full Test
+        document.getElementById('startFullTestBtn').addEventListener('click', async () => {
+            const overlay = document.getElementById('generationOverlay');
+            overlay.style.display = 'flex';
+
+            try {
+                // Generate fresh scenarios for both tasks (with cache-busting)
+                const timestamp = new Date().getTime();
+                const [emailRes, acadRes] = await Promise.all([
+                    fetch(`/api/scenarios/generate-ai?type=email&t=${timestamp}&username=${encodeURIComponent(currentUser)}`).then(r => r.json()),
+                    fetch(`/api/scenarios/generate-ai?type=academic&t=${timestamp}&username=${encodeURIComponent(currentUser)}`).then(r => r.json())
+                ]);
+
+                if (emailRes.success && acadRes.success) {
+                    // Store pre-generated scenarios
+                    sessionStorage.setItem('fullTest_email_scenario', emailRes.scenario);
+                    sessionStorage.setItem('fullTest_academic_scenario', acadRes.scenario);
+
+                    window.location.href = 'full-test.html';
+                } else {
+                    const errorMsg = (emailRes.message || acadRes.message || "Unknown error");
+                    throw new Error(errorMsg);
+                }
+            } catch (err) {
+                console.error("Test setup failed:", err);
+                alert("Failed to prepare AI scenarios: " + err.message);
+                overlay.style.display = 'none';
+            }
+        });
+
+        // Load user sessions
+        async function loadSessions() {
+            try {
+                const response = await fetch(`/api/sessions/${currentUser}`);
+                const data = await response.json();
+
+                if (data.success) {
+                    sessionsData = data.sessions;
+                    renderSessions(sessionsData);
+                    renderChart(sessionsData);
+                }
+            } catch (error) {
+                console.error('Failed to load sessions:', error);
+            }
+        }
+
+        // Render sessions list
+        function renderSessions(sessions, filter = 'all') {
+            const sessionsList = document.getElementById('sessionsList');
+
+            const filteredSessions = filter === 'all'
+                ? sessions
+                : sessions.filter(s => s.taskType === filter);
+
+            if (filteredSessions.length === 0) {
+                sessionsList.innerHTML = `
+                    <div class="empty-state">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        <p>No sessions found</p>
+                        <span>${filter === 'all' ? 'Start practicing to see your progress here!' : `No ${filter} sessions yet.`}</span>
+                    </div>
+                `;
+                return;
+            }
+
+            sessionsList.innerHTML = filteredSessions.map((session, index) => {
+                const isFullTest = session.taskType === 'full-test';
+                let icon = session.taskType === 'email' ? '✉️' : '💬';
+                let title = session.taskType === 'email' ? 'Email Task' : 'Academic Discussion';
+                if (isFullTest) {
+                    icon = '🏆';
+                    title = 'Full Test';
+                }
+
+                // For full test, we use the average breakdown or show both
+                const feedback = isFullTest ? session.details.email : session.feedback;
+
+                return `
+                <div class="session-card" data-session-id="${session.id}" id="session-${session.id}">
+                    <div class="session-header">
+                        <div class="session-info">
+                            <h3>
+                                <span class="session-badge ${session.taskType}">${icon}</span>
+                                ${title}
+                            </h3>
+                            <span class="session-date">${new Date(session.date).toLocaleDateString()}</span>
+                        </div>
+                        <div class="session-score">
+                            <div class="score-value">${session.score}<span>/100</span></div>
+                            <div class="score-stars">${getStars(session.score)}</div>
+                        </div>
+                    </div>
+                    ${!isFullTest ? `
+                    <div class="session-breakdown">
+                        <div class="breakdown-item">
+                            <span>Task Achievement</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(feedback.breakdown.taskAchievement / 25) * 100}%"></div>
+                                <span class="progress-value">${feedback.breakdown.taskAchievement}/25</span>
+                            </div>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Organization</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(feedback.breakdown.organization / 25) * 100}%"></div>
+                                <span class="progress-value">${feedback.breakdown.organization}/25</span>
+                            </div>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Language Use</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(feedback.breakdown.languageUse / 25) * 100}%"></div>
+                                <span class="progress-value">${feedback.breakdown.languageUse}/25</span>
+                            </div>
+                        </div>
+                        <div class="breakdown-item">
+                            <span>Grammar</span>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: ${(feedback.breakdown.grammar / 25) * 100}%"></div>
+                                <span class="progress-value">${feedback.breakdown.grammar}/25</span>
+                            </div>
+                        </div>
+                    </div>
+                    ` : `
+                    <div class="full-test-mini-report" style="margin: 10px 0; color: #666; font-size: 0.9rem;">
+                        <p>Includes Email Task (${session.details.email.overallScore}/100) and Academic Discussion (${session.details.academic.overallScore}/100).</p>
+                    </div>
+                    `}
+                    <button class="btn-expand" onclick="toggleFeedback('${session.id}')">
+                        <span class="expand-text">View Detailed Feedback</span>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                    <div class="session-feedback" id="feedback-${session.id}">
+                        ${isFullTest ? `
+                            <div class="feedback-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                <div class="feedback-section">
+                                    <h4>📧 Email Task</h4>
+                                    <p>${session.details.email.detailedFeedback}</p>
+                                </div>
+                                <div class="feedback-section">
+                                    <h4>💬 Academic Discussion</h4>
+                                    <p>${session.details.academic.detailedFeedback}</p>
+                                </div>
+                            </div>
+                        ` : `
+                            <div class="feedback-section">
+                                <h4>✅ Strengths</h4>
+                                <ul>
+                                    ${session.feedback.strengths.map(s => `<li>${s}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="feedback-section">
+                                <h4>📝 Areas for Improvement</h4>
+                                <ul>
+                                    ${session.feedback.improvements.map(i => `<li>${i}</li>`).join('')}
+                                </ul>
+                            </div>
+                            <div class="feedback-section">
+                                <h4>💬 Detailed Feedback</h4>
+                                <p>${session.feedback.detailedFeedback}</p>
+                            </div>
+                        `}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // Toggle feedback visibility
+        function toggleFeedback(sessionId) {
+            const feedbackEl = document.getElementById(`feedback-${sessionId}`);
+            const btn = feedbackEl.previousElementSibling;
+            const isExpanded = feedbackEl.classList.contains('expanded');
+
+            if (isExpanded) {
+                feedbackEl.classList.remove('expanded');
+                btn.querySelector('.expand-text').textContent = 'View Detailed Feedback';
+                btn.querySelector('svg').style.transform = 'rotate(0deg)';
+            } else {
+                feedbackEl.classList.add('expanded');
+                btn.querySelector('.expand-text').textContent = 'Hide Detailed Feedback';
+                btn.querySelector('svg').style.transform = 'rotate(180deg)';
+            }
+        }
+
+        // Get star rating
+        function getStars(score) {
+            const stars = Math.round(score / 20);
+            return '⭐'.repeat(stars) + '☆'.repeat(5 - stars);
+        }
+
+        // Render chart
+        function renderChart(sessions) {
+            const ctx = document.getElementById('scoreChart');
+
+            if (sessions.length === 0) {
+                ctx.parentElement.innerHTML = '<p class="no-data">Complete sessions to see your progress chart</p>';
+                return;
+            }
+
+            const emailSessions = sessions.filter(s => s.taskType === 'email');
+            const academicSessions = sessions.filter(s => s.taskType === 'academic');
+            const fullTests = sessions.filter(s => s.taskType === 'full-test');
+
+            const labels = sessions.map((_, i) => `Session ${i + 1}`);
+
+            if (scoreChart) {
+                scoreChart.destroy();
+            }
+
+            scoreChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: 'Email Tasks',
+                            data: sessions.map(s => s.taskType === 'email' ? s.score : null),
+                            borderColor: '#077F83',
+                            backgroundColor: 'rgba(7, 127, 131, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Academic Discussion',
+                            data: sessions.map(s => s.taskType === 'academic' ? s.score : null),
+                            borderColor: '#2B8084',
+                            backgroundColor: 'rgba(43, 128, 132, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 6,
+                            pointHoverRadius: 8,
+                            spanGaps: true
+                        },
+                        {
+                            label: 'Full Tests',
+                            data: sessions.map(s => s.taskType === 'full-test' ? s.score : null),
+                            borderColor: '#FFC107',
+                            backgroundColor: 'rgba(255, 193, 7, 0.1)',
+                            tension: 0.3,
+                            fill: false,
+                            pointRadius: 8,
+                            pointHoverRadius: 10,
+                            borderDash: [5, 5],
+                            spanGaps: true
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    onClick: (event, elements) => {
+                        if (elements.length > 0) {
+                            const index = elements[0].index;
+                            scrollToSession(sessions[index].id);
+                        }
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            labels: {
+                                color: '#8b949e',
+                                usePointStyle: true
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            padding: 12,
+                            displayColors: true
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#8b949e'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: {
+                                color: '#8b949e'
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Scroll to session
+        function scrollToSession(sessionId) {
+            const sessionCard = document.getElementById(`session-${sessionId}`);
+            if (sessionCard) {
+                sessionCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                sessionCard.classList.add('highlight');
+                setTimeout(() => sessionCard.classList.remove('highlight'), 2000);
+            }
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const filter = btn.dataset.filter;
+                renderSessions(sessionsData, filter);
+            });
+        });
+
+        // Load sessions on page load
+        loadSessions();
+    </script>
+</body>
+
+</html>

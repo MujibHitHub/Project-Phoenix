@@ -1,0 +1,150 @@
+<!doctype html>
+
+<html class="no-js" lang="en" dir="ltr">
+
+<head>
+    <title>TOEFL</title>
+
+	<script src="../../js/tc-util-helper.js" defer></script>
+	<script src="../../js/websocket-template.js"></script>
+	<script src="../../js/ets-audio-recording.js"></script>
+
+    <!-- System Check for  IE browsers less than 9 -->
+    <!--[if lt IE 9]>
+    <meta http-equiv="refresh" content="0;url=./errorpages/browsers.html">
+    <![endif]-->
+
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta name="google" content="notranslate"/>
+
+    <link rel="shortcut icon" href="data:image/x-icon;," type="image/x-icon">
+
+
+    <!-- System check for Javascript -->
+    <noscript>
+        <meta http-equiv="refresh" content="0; URL=errorpages/nojavascript.html">
+    </noscript>
+    <!-- End of System check for Javascript -->
+    <!--CSS loading is moved to launch-service-->
+    <!--<link rel="stylesheet" href="../../libs/bootstrap/dist/css/bootstrap-theme.min.css"/>-->
+
+    <!-- Css Files -->
+    <!-- inject:LTR:css -->
+    <link href="../../libs/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet"/>
+    <link href="../common/all/styles/screenLtr.css" rel="stylesheet"/>
+    <link href="../common/compat/styles/screenLtr.css" rel="stylesheet"/>
+    <link href="styles/screenLtr.css" rel="stylesheet"/>
+    <link href="styles/toolbarToefl.css" rel="stylesheet"/>
+    <link href="../common/highstakes/styles/ibt2.css" rel="stylesheet"/>
+    <link href="styles/toolbarToefl.css" rel="stylesheet"/>
+    <link href="styles/toefl_prem.css" rel="stylesheet"/>
+    <link href="../common/highstakes/styles/_debIndex.css" rel="stylesheet"/>
+    <link href="../common/highstakes/styles/debugToolbar.css" rel="stylesheet"/>
+    <link href="../common/highstakes/styles/micCheck.css" rel="stylesheet"/>
+    <link href="styles/gpo.css" rel="stylesheet"/>
+    <script src="js/d3.v3.min.js" type="text/javascript"></script>
+    <link href="styles/toefl_enky.css" rel="stylesheet"/>
+
+
+   
+    
+
+<!--    <link rel="stylesheet" type="text/css" href="../../libs/ets/iviewer/css/jquery-ui/jquery-ui.css"/>-->
+   
+    <!--Filter css-->
+    <link href="../common/all/styles/filters.css" rel="stylesheet"/>
+    <!--Filter css -end-->
+    <!-- endinject -->
+    <!-- End Of Css Files -->
+
+    <!-- iViewer Related -->
+    <!--    <link rel="stylesheet" type="text/css" href="../../libs/ets/iviewer/css/jquery-ui-1.10.4.custom.min.css"/>-->
+    <link rel="stylesheet" href="../../libs/ets/iviewer/lib/jquery/jquery-ui/jquery-ui.css">
+    <!-- <link rel="stylesheet" type="text/css" href="../../libs/ets/iviewer/css/iviewer-common.css"/> -->
+
+
+    <script>
+
+        //TODO: set this flag from dev login and put all globals we cannot avoid in a single object (GS)
+        var clientLogDebugEnabled = true;
+        var tcLite = false;
+
+    	function getParameterByName( name ){
+    	    var regexS = '[\\?&]'+name+'=([^&#]*)',
+    	  regex = new RegExp( regexS ),
+    	  results = regex.exec( window.location.search );
+    	  if( results == null ){
+    	    return '';
+    	  } else{
+    	    return decodeURIComponent(results[1].replace(/\+/g, ' '));
+    	  }
+    	}
+
+        function detectBrowserRefresh() {
+            if (sessionStorage['isRefreshOrClose_hs']) {
+
+                if (sessionStorage['isRefreshOrClose_hs'] === 'Y') {
+                    sessionStorage['isRefreshOrClose_hs'] = 'N';
+                    window.location.href = "./errorpages/refreshError.html";
+                    return;
+                } else {
+                    initializeLoading.loadApplicationScript();
+                    return;
+                }
+            } else {
+                initializeLoading.loadApplicationScript();
+                return;
+            }
+
+        }
+
+        function initApplication(){
+            detectBrowserRefresh();
+        }
+
+    </script>
+    <!-- TextHelp -->
+    <!--  <script type="text/javascript" src=" https://configuration.speechstream.net/etsunify/v217/config.js "></script> -->
+</head>
+
+<body tc-user-active tc-highstake-onunload tc-right-click tc-keyboard-events
+      tc-copy-paste onload="initApplication()">
+
+<!--        DO NOT REMOVE. AUDIO PLACEHOLDER FOR AUDIO RECORDING DURATION CALCULATION-->
+      <audio id="audioPlaceHolder" controls aria-hidden="true" style="visibility: hidden; position: fixed; left: 0px; top: 0px;" tabindex="-1"></audio>
+
+<section id="app-container" class="">
+
+    <div id="loading-indicator">
+        <img class="init-loading-indicator"
+             style="position: absolute;top: 20%;left: 0;right: 0;z-index: 1200;margin: auto;"
+             src="../common/all/img/loading.gif" alt="Page loading, please wait"/>
+    </div>
+
+
+    <!--Debug Button Toolbar-->
+    <div class="nav-debug-toolbar-section" tc-nav-debug-toolbar></div>
+    <!--Debug Button Toolbar -->
+
+	<!-- content gets injected here -->
+    <div id="app-container-inner"></div>
+</section>
+
+<!--Icons Partial-->
+<section ng-include src="'../../themes/common/all/partials/icons-svg.html'"></section>
+<!--Icons Partial-->
+
+<!-- DO NOT REMOVE!! @@ The load-initial-fnc.js src path will be replace with a minified version. -->
+<!-- inject:APP:JS -->
+    <!--ANYTHING WITHIN THIS BLOCK (BETWEEN inject:APP:JS and endinject) WILL BE REMOVED DURING GULP PROCESS-->
+<script src="../../js/load-initial-fnc.js"></script>
+ 
+<!-- endinject -->
+
+<script src="../../js/ets-video-recording.js"></script>
+
+<script type="text/javascript" src="../../../_Incapsula_Resource@SWJIYLWA=719d34d31c8e3a6e6fffd425f7e032f3&amp;ns=1&amp;cb=2077637766" async></script></body>
+
+</html>
