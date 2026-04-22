@@ -447,7 +447,11 @@ app.get('/api/scenarios/academic', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
-    console.log('Gemini AI integration: ACTIVE');
-});
+if (require.main === module) {
+    app.listen(PORT, () => {
+        console.log(`Server running at http://localhost:${PORT}`);
+        console.log('Gemini AI integration: ACTIVE');
+    });
+}
+
+module.exports = app;
