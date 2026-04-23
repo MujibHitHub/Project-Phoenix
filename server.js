@@ -33,11 +33,11 @@ const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY || "Missing_Key");
 
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, '.'))); // Serve static files from current dir
+app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from public dir
 
 // This ensures that when someone hits "/", Express knows exactly where index.html is
 app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 // Helper to read users
