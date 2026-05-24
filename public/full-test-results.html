@@ -399,13 +399,15 @@
 
         <!-- Dashboard Button -->
         <div style="text-align:center; margin: 40px 0;">
-            <button onclick="window.location.href='dashboard.html'"
-                style="background:var(--secondary); color:#fff; border:none; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:transform 0.1s;">
+            <button onclick="window.parent.location.href='dashboard.html'"
+                data-no-intercept="true"
+                style="background: #9333ea; color: #ffffff; border:none; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:transform 0.1s;">
                 Return to Dashboard
             </button>
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
         const RUBRIC_EMAIL = `GENERAL DESCRIPTION of Write an Email task:
 Score 5: A fully successful response
@@ -522,7 +524,7 @@ Score 0: The response is blank, rejects the topic, is not in English, is entirel
                 console.log("Starting Task 1...");
                 const res1 = await fetch('/api/evaluate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: PhoenixAuth.getAuthHeaders(),
                     body: JSON.stringify({ taskType: 'email', userResponse: emailResp, scenario: emailScen })
                 });
                 const json1 = await res1.json();
@@ -533,7 +535,7 @@ Score 0: The response is blank, rejects the topic, is not in English, is entirel
                 console.log("Starting Task 2...");
                 const res2 = await fetch('/api/evaluate', {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: PhoenixAuth.getAuthHeaders(),
                     body: JSON.stringify({ taskType: 'academic', userResponse: acadResp, scenario: acadScen })
                 });
                 const json2 = await res2.json();
@@ -542,6 +544,22 @@ Score 0: The response is blank, rejects the topic, is not in English, is entirel
                 // Render Results
                 renderCurrentScore(t1Data, t2Data);
                 updateMyBest(t1Data, t2Data, today);
+
+                if (PhoenixAuth.isAuthenticated()) {
+                    const emailScore = PhoenixAuth.scoreFromEvaluation(t1Data);
+                    const academicScore = PhoenixAuth.scoreFromEvaluation(t2Data);
+                    await PhoenixAuth.savePracticeSession({
+                        taskType: 'full-test',
+                        scenario: `${cleanScenario(emailScen)}\n\n${cleanScenario(acadScen)}`,
+                        userResponse: `${emailResp}\n\n---\n\n${acadResp}`,
+                        evaluation: {
+                            details: { email: t1Data, academic: t2Data },
+                            score: Math.round((emailScore + academicScore) / 2)
+                        },
+                        score: Math.round((emailScore + academicScore) / 2),
+                        details: { email: t1Data, academic: t2Data }
+                    });
+                }
 
                 // Show manual button if fallback detected
                 if (t1Data.source === 'fallback' || t2Data.source === 'fallback') {

@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Results - Project Phoenix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-bg: #f8f9fa;
+            --card-blue-bg: #eef2ff;
+            --card-orange-bg: #fff5eb;
+            --blue-border: #6366f1;
+            --orange-border: #f97316;
+            --text-dark: #1f2937;
+            --text-muted: #6b7280;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 40px 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* Official Report Card Style */
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            margin-bottom: 30px;
+            overflow: hidden;
+            border: 1px solid #e5e7eb;
+        }
+
+        .report-header {
+            padding: 20px 30px;
+            border-bottom: 2px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .report-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .test-date {
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Section Specifics */
+        .section-blue {
+            border-top: 4px solid var(--blue-border);
+        }
+
+        .section-orange {
+            border-top: 4px solid var(--orange-border);
+        }
+
+        .report-body {
+            padding: 30px;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 40px;
+            align-items: center;
+        }
+
+        /* Circular Gauge */
+        .gauge-container {
+            text-align: center;
+            position: relative;
+        }
+
+        .gauge-svg {
+            transform: rotate(-90deg);
+            width: 150px;
+            height: 150px;
+        }
+
+        .gauge-circle-bg {
+            fill: none;
+            stroke: #e5e7eb;
+            stroke-width: 12;
+        }
+
+        .gauge-circle-fill {
+            fill: none;
+            stroke-width: 12;
+            stroke-linecap: round;
+            stroke-dasharray: 377;
+            /* 2 * pi * radius (60) ~ 377 */
+            stroke-dashoffset: 377;
+            transition: stroke-dashoffset 1.5s ease-out;
+        }
+
+        .blue-fill {
+            stroke: var(--blue-border);
+        }
+
+        .orange-fill {
+            stroke: var(--orange-border);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-score {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--text-dark);
+        }
+
+        .gauge-max {
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .cefr-label {
+            margin-top: 10px;
+            font-weight: 600;
+            color: var(--text-dark);
+        }
+
+        /* Task Cards */
+        .tasks-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .task-box {
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .task-blue {
+            background-color: var(--card-blue-bg);
+        }
+
+        .task-orange {
+            background-color: var(--card-orange-bg);
+        }
+
+        .task-icon {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+
+        .task-name {
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text-dark);
+        }
+
+        .task-score-large {
+            font-size: 1.25rem;
+            font-weight: 800;
+            margin: 5px 0;
+            color: var(--text-dark);
+        }
+
+        .task-score-sub {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .task-date {
+            margin-top: 5px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Feedback Section (Accordion style or below) */
+        .feedback-section {
+            padding: 0 30px 30px 30px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 0;
+        }
+
+        .feedback-header {
+            padding: 20px 0 10px 0;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .feedback-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .feedback-box {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 20px;
+        }
+
+        .feedback-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: #4b5563;
+        }
+
+        .feedback-text {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: #374151;
+        }
+
+        .btn-manual {
+            background: white;
+            border: 1px solid #d1d5db;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            margin-top: 10px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .btn-manual:hover {
+            border-color: #9ca3af;
+            background: #f3f4f6;
+        }
+
+        /* Loading Overlay */
+        #loadingOverlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e5e7eb;
+            border-top-color: var(--blue-border);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Loading State -->
+    <div id="loadingOverlay">
+        <div class="spinner"></div>
+        <h2 id="loadingText" style="color: var(--blue-border);">Evaluating Task 1...</h2>
+        <p style="color: grey;">This runs sequentially to ensure accuracy.</p>
+    </div>
+
+    <div class="container" id="content" style="display:none;">
+
+        <!-- SECTION 1: BLUE (Current Score) -->
+        <div class="report-card section-blue">
+            <div class="report-header">
+                <div class="test-date" id="testDate">Test Date: Jan 22, 2026</div>
+                <div style="font-size: 0.9rem; font-weight: 500; color: #6366f1;">Official Score Report</div>
+            </div>
+
+            <div class="report-body">
+                <!-- Overall Gauge -->
+                <div class="gauge-container">
+                    <svg class="gauge-svg" viewBox="0 0 120 120">
+                        <circle class="gauge-circle-bg" cx="60" cy="60" r="54"></circle>
+                        <circle id="overallGauge" class="gauge-circle-fill blue-fill" cx="60" cy="60" r="54"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-score" id="totalScaled">--</div>
+                        <div class="gauge-max">of 60</div>
+                    </div>
+                    <div class="cefr-label" id="totalLevel">CEFR: --</div>
+                </div>
+
+                <!-- Individual Tasks -->
+                <div class="tasks-grid">
+                    <div class="task-box task-blue">
+                        <div class="task-icon">✉️</div>
+                        <div class="task-name">Writing: Email</div>
+                        <div class="task-score-large" id="t1Raw">-- of 5.0</div>
+                        <div class="task-score-sub" id="t1Scaled">-- of 30</div>
+                    </div>
+
+                    <div class="task-box task-blue">
+                        <div class="task-icon">🎓</div>
+                        <div class="task-name">Writing: Academic</div>
+                        <div class="task-score-large" id="t2Raw">-- of 5.0</div>
+                        <div class="task-score-sub" id="t2Scaled">-- of 30</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feedback-section">
+                <div class="feedback-header">Detailed Feedback</div>
+                <div class="feedback-grid">
+                    <div class="feedback-box">
+                        <div class="feedback-title">Task 1: Email</div>
+                        <div class="feedback-text" id="t1Feedback">Loading...</div>
+                    </div>
+                    <div class="feedback-box">
+                        <div class="feedback-title">Task 2: Academic</div>
+                        <div class="feedback-text" id="t2Feedback">Loading...</div>
+                    </div>
+                </div>
+                <!-- Manual Score Button -->
+                <div style="text-align:right; margin-top:20px;">
+                    <button class="btn-manual" onclick="copyFullData()">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2">
+                            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                        </svg>
+                        Score Manually: Copy FULL Test Context
+                    </button>
+                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:5px;">Copy all data and rubrics
+                        to score using external ChatGPT if needed.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: ORANGE (MyBest Scores) -->
+        <div class="report-card section-orange">
+            <div class="report-header">
+                <div class="report-title"><em>MyBest</em>&trade; Scores</div>
+                <div style="font-size: 0.85rem; color: #6b7280;">Your highest section scores from all valid test dates.
+                </div>
+            </div>
+
+            <div class="report-body">
+                <!-- MyBest Gauge -->
+                <div class="gauge-container">
+                    <svg class="gauge-svg" viewBox="0 0 120 120">
+                        <circle class="gauge-circle-bg" cx="60" cy="60" r="54"></circle>
+                        <circle id="bestGauge" class="gauge-circle-fill orange-fill" cx="60" cy="60" r="54"></circle>
+                    </svg>
+                    <div class="gauge-text">
+                        <div class="gauge-score" id="bestTotal">--</div>
+                        <div class="gauge-max">of 60</div>
+                    </div>
+                    <div class="cefr-label" id="bestLevel">CEFR: --</div>
+                </div>
+
+                <!-- Best Tasks -->
+                <div class="tasks-grid">
+                    <div class="task-box task-orange">
+                        <div class="task-icon">✉️</div>
+                        <div class="task-name">Writing: Email</div>
+                        <div class="task-score-large" id="bestT1">--</div>
+                        <div class="task-date" id="bestT1Date">--</div>
+                    </div>
+
+                    <div class="task-box task-orange">
+                        <div class="task-icon">🎓</div>
+                        <div class="task-name">Writing: Academic</div>
+                        <div class="task-score-large" id="bestT2">--</div>
+                        <div class="task-date" id="bestT2Date">--</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Button -->
+        <div style="text-align:center; margin: 40px 0;">
+            <button onclick="window.location.href='dashboard.html'"
+                style="background:var(--secondary); color:#fff; border:none; padding:12px 24px; border-radius:8px; font-weight:600; cursor:pointer; font-size:1rem; box-shadow:0 4px 6px rgba(0,0,0,0.1); transition:transform 0.1s;">
+                Return to Dashboard
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const RUBRIC_EMAIL = `GENERAL DESCRIPTION of Write an Email task:
+Score 5: A fully successful response
+The response is effective, is clearly expressed, and shows consistent facility in the use of language.
+A typical response displays the following:
+* Elaboration that effectively supports the communicative purpose
+* Effective syntactic variety and precise, idiomatic word choice
+* Consistent use of appropriate social conventions (e.g, politeness, register, organization of information and formulation of actions such as requests, refusals, criticisms, etc.)
+* Almost no lexical or grammatical errors other than those expected from a competent writer writing under timed conditions (eg, common typos or common misspellings or substitutions like there/their)
+
+Score 4: A generally successful response
+The response is mostly effective and easily understood. Language facility is adequate to the task.
+A typical response displays the following:
+* Adequate elaboration to support the communicative purpose
+* Syntactic variety and appropriate word choice
+* Mostly appropriate social conventions
+* Few lexical or grammatical errors
+
+Score 3: A partially successful response
+The response generally accomplishes the task. Limitations in language facility may prevent parts of the message from being fully clear and effective.
+A typical response displays the following:
+* Elaboration that partially supports the communicative purpose
+* A moderate range of syntax and vocabulary
+* Some noticeable errors in structure, word forms, use of idiomatic language and/or social conventions
+
+Score 2: A typical response exhibits one or more of the following:
+* Limited or irrelevant elaboration
+* Some connected sentence-level language, with a limited range of syntax and vocabulary
+* An accumulation of errors in sentence structure and/or language use
+
+Score 1: An unsuccessful response
+The response reflects an ineffective attempt to address the task. The message may be limited to the point of being unintelligible.
+A typical response exhibits one or more of the following:
+* Very little elaboration, if any
+* Telegraphic language (i.e., short and/or disconnected phrases and sentences) with a very limited range of vocabulary
+* Serious and frequent errors in the use of language
+* Minimal original language; any coherent language is mostly borrowed from the stimulus
+
+Score 0: The response is blank, rejects the topic, is not in English, is entirely copied from the prompt, is entirely unconnected to the prompt or consists of arbitrary keystrokes.`;
+
+        const RUBRIC_ACADEMIC = `GENERAL DESCRIPTION of Write for an Academic Discussion task:
+Score 5: A fully successful response
+The response is a relevant and very clearly expressed contribution to the online discussion, and it demonstrates consistent facility in the use of language.
+A typical response displays the following:
+* Relevant and well-elaborated explanations, exemplifications and/or details
+* Effective use of a variety of syntactic structures and precise, idiomatic word choice
+* Almost no lexical or grammatical errors other than those expected from a competent writer writing under timed conditions (e.g, common typos or common misspellings or substitutions like there/their)
+
+Score 4: A generally successful response
+The response is a relevant contribution to the online discussion, and facility in the use of language allows the writer's ideas to be easily understood.
+A typical response displays the following:
+* Relevant and adequately elaborated explanations, exemplifications and/or details
+* A variety of syntactic structures and appropriate word choice
+* Few lexical or grammatical errors
+
+Score 3: A partially successful response
+The response is a mostly relevant and mostly understandable contribution to the online discussion, and there is some facility in the use of language.
+A typical response displays the following:
+* Elaboration in which part of an explanation, example or detail may be missing, unclear or irrelevant
+* Some variety in syntactic structures and a range of vocabulary
+* Some noticeable lexical and grammatical errors in sentence structure, word form or use of idiomatic language
+
+Score 2: The response reflects an attempt to contribute to the online discussion, but limitations in the use of language may make ideas hard to follow.
+A typical response displays the following:
+* Ideas that may be poorly elaborated or only partially relevant
+* A limited range of syntactic structures and vocabulary
+* An accumulation of errors in sentence structure, word forms or use
+
+Score 1: The response reflects an ineffective attempt to contribute to the online discussion, and limitations in the use of language may prevent the expression of ideas.
+A typical response displays the following:
+* Words and phrases that indicate an attempt to address the task, but with few or no coherent ideas
+* Severely limited range of syntactic structures and vocabulary
+* Serious and frequent errors in the use of language
+* Minimal original language; any coherent language is mostly borrowed from the stimulus
+
+Score 0: The response is blank, rejects the topic, is not in English, is entirely copied from the prompt, is entirely unconnected to the prompt or consists of arbitrary keystrokes.`;
+
+        let t1Data = {}, t2Data = {};
+
+        function cleanScenario(text) {
+            if (!text) return "";
+            return text
+                .replace(/Project Phoenix/gi, "")
+                .replace(/Next/gi, "")
+                .replace(/Writing \| Question \d of \d/gi, "")
+                .replace(/Hide Time/gi, "")
+                .replace(/\d{1,2}:\d{2}/g, "")
+                .replace(/Cut\s*Paste\s*Undo\s*Redo/gi, "")
+                .replace(/Hide Word Count:\s*\d*/gi, "")
+                .replace(/Write as much as you can and in complete sentences\.?/gi, "")
+                .replace(/^\s*[\r\n]/gm, "")
+                .trim();
+        }
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Set Date
+            const options = { year: 'numeric', month: 'short', day: 'numeric' };
+            const today = new Date().toLocaleDateString('en-US', options);
+            document.getElementById('testDate').innerText = `Test Date: ${today}`;
+
+            const emailResp = sessionStorage.getItem('fullTest_email_response');
+            const emailScen = sessionStorage.getItem('fullTest_email_scenario');
+            const acadResp = sessionStorage.getItem('fullTest_academic_response');
+            const acadScen = sessionStorage.getItem('fullTest_academic_scenario');
+
+            if (!emailResp || !acadResp) {
+                alert('Missing test data'); window.location.href = 'dashboard.html'; return;
+            }
+
+            // SEQUENTIAL EVALUATION
+            try {
+                // 1. Evaluate Email
+                document.getElementById('loadingText').innerText = "Evaluating Task 1 (Email)...";
+                console.log("Starting Task 1...");
+                const res1 = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ taskType: 'email', userResponse: emailResp, scenario: emailScen })
+                });
+                const json1 = await res1.json();
+                t1Data = json1.evaluation;
+
+                // 2. Evaluate Academic
+                document.getElementById('loadingText').innerText = "Evaluating Task 2 (Academic)...";
+                console.log("Starting Task 2...");
+                const res2 = await fetch('/api/evaluate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ taskType: 'academic', userResponse: acadResp, scenario: acadScen })
+                });
+                const json2 = await res2.json();
+                t2Data = json2.evaluation;
+
+                // Render Results
+                renderCurrentScore(t1Data, t2Data);
+                updateMyBest(t1Data, t2Data, today);
+
+                // Show manual button if fallback detected
+                if (t1Data.source === 'fallback' || t2Data.source === 'fallback') {
+                    document.getElementById('manualScoreParams').style.display = 'block';
+                }
+
+                // Hide Loading
+                document.getElementById('loadingOverlay').style.display = 'none';
+                document.getElementById('content').style.display = 'block';
+
+                // Animate Gauges
+                setTimeout(() => {
+                    const total = (t1Data.scaledScore || 0) + (t2Data.scaledScore || 0);
+                    setGauge('overallGauge', total, 60);
+                }, 500);
+
+            } catch (e) {
+                console.error(e);
+                alert("Evaluation Error. Please check console.");
+            }
+        });
+
+        function renderCurrentScore(t1, t2) {
+            // Task 1
+            const t1Raw = (t1.rawScore || 0).toFixed(1);
+            const t1Scaled = Math.round(t1.scaledScore || 0);
+            document.getElementById('t1Raw').innerText = `${t1Raw} of 5.0`;
+            document.getElementById('t1Scaled').innerText = `${t1Scaled} of 30`;
+            document.getElementById('t1Feedback').innerText = t1.detailedFeedback || "No feedback available.";
+
+            // Task 2
+            const t2Raw = (t2.rawScore || 0).toFixed(1);
+            const t2Scaled = Math.round(t2.scaledScore || 0);
+            document.getElementById('t2Raw').innerText = `${t2Raw} of 5.0`;
+            document.getElementById('t2Scaled').innerText = `${t2Scaled} of 30`;
+            document.getElementById('t2Feedback').innerText = t2.detailedFeedback || "No feedback available.";
+
+            // Total
+            const total = t1Scaled + t2Scaled;
+            document.getElementById('totalScaled').innerText = total;
+            document.getElementById('totalLevel').innerText = `CEFR: ${calculateCEFR(total)}`;
+        }
+
+        function updateMyBest(t1, t2, today) {
+            let history = JSON.parse(localStorage.getItem('toefl_history') || '{"t1":0, "t2":0, "t1Date":"-", "t2Date":"-"}');
+
+            // Update if better
+            if ((t1.scaledScore || 0) >= history.t1) {
+                history.t1 = Math.round(t1.scaledScore || 0);
+                history.t1Date = today;
+            }
+            if ((t2.scaledScore || 0) >= history.t2) {
+                history.t2 = Math.round(t2.scaledScore || 0);
+                history.t2Date = today;
+            }
+
+            localStorage.setItem('toefl_history', JSON.stringify(history));
+
+            // Render MyBest
+            document.getElementById('bestT1').innerText = `${history.t1} of 30`;
+            document.getElementById('bestT1Date').innerText = history.t1Date;
+
+            document.getElementById('bestT2').innerText = `${history.t2} of 30`;
+            document.getElementById('bestT2Date').innerText = history.t2Date;
+
+            const bestTotal = history.t1 + history.t2;
+            document.getElementById('bestTotal').innerText = bestTotal;
+            document.getElementById('bestLevel').innerText = `CEFR: ${calculateCEFR(bestTotal)}`;
+
+            setTimeout(() => {
+                setGauge('bestGauge', bestTotal, 60);
+            }, 800);
+        }
+
+        function setGauge(id, val, max) {
+            const circle = document.getElementById(id);
+            const radius = 54;
+            const circumference = 2 * Math.PI * radius; // ~339.29
+            const offset = circumference - (val / max) * circumference;
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            circle.style.strokeDashoffset = offset;
+        }
+
+        function calculateCEFR(total) {
+            if (total >= 50) return "C1"; // Adjusted for 0-60 scale
+            if (total >= 40) return "B2";
+            if (total >= 30) return "B1";
+            return "A2/Below";
+        }
+
+        function copyFullData() {
+            const emailResp = sessionStorage.getItem('fullTest_email_response');
+            let emailScen = sessionStorage.getItem('fullTest_email_scenario');
+            const acadResp = sessionStorage.getItem('fullTest_academic_response');
+            let acadScen = sessionStorage.getItem('fullTest_academic_scenario');
+
+            // Clean Scenarios
+            emailScen = cleanScenario(emailScen);
+            acadScen = cleanScenario(acadScen);
+
+            const promptText = `You are a professional TOEFL iBT examiner. Please evaluate the following TWO writing tasks based on the provided rubrics.
+
+=== TASK 1: WRITE AN EMAIL ===
+RUBRIC:
+${RUBRIC_EMAIL}
+
+SCENARIO:
+${emailScen}
+
+STUDENT RESPONSE:
+"${emailResp}"
+
+---
+
+=== TASK 2: ACADEMIC DISCUSSION ===
+RUBRIC:
+${RUBRIC_ACADEMIC}
+
+SCENARIO:
+${acadScen}
+
+STUDENT RESPONSE:
+"${acadResp}"
+
+---
+
+INSTRUCTIONS:
+For EACH task, provide:
+1. A raw score (0.0-5.0).
+2. A scaled score (0-30).
+3. Detailed feedback on strengths and weaknesses.
+4. Final formatted report.
+`;
+
+            navigator.clipboard.writeText(promptText).then(() => {
+                alert("FULL Test Data Copied! Paste this into ChatGPT or Gemini to get your official evaluation.");
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+                alert("Failed to copy. Please manually copy the data.");
+            });
+        }
+    </script>
+</body>
+
+</html>

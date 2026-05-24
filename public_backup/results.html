@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Results - Project Phoenix</title>
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-teal: #007675;
+            /* TOEFL iBT teal */
+            --bg-gray: #f8f9fa;
+            --text-dark: #333;
+            --card-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        body {
+            background-color: var(--bg-gray);
+            margin: 0;
+            font-family: 'Open Sans', 'Inter', sans-serif;
+            color: var(--text-dark);
+        }
+
+        .header-teal {
+            background-color: var(--primary-teal);
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            color: white;
+            font-weight: 700;
+            font-size: 24px;
+        }
+
+        .results-container {
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 0 20px;
+            text-align: center;
+        }
+
+        .id-info {
+            text-align: left;
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .title-hero {
+            font-size: 42px;
+            font-weight: 800;
+            margin-bottom: 10px;
+            color: #222;
+        }
+
+        .not-official-tag {
+            border: 1px solid #ff7e79;
+            color: #ff7e79;
+            padding: 4px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            font-weight: 700;
+            font-size: 12px;
+            margin-bottom: 30px;
+        }
+
+        .overall-score-section {
+            position: relative;
+            margin-bottom: 50px;
+        }
+
+        .score-label-sub {
+            font-weight: 700;
+            color: #444;
+            margin-bottom: 20px;
+            font-size: 18px;
+        }
+
+        /* Gauge Arc */
+        .gauge-container {
+            width: 300px;
+            height: 150px;
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .gauge-arc {
+            width: 300px;
+            height: 300px;
+            border: 40px solid #e9ecef;
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            border-radius: 50%;
+            transform: rotate(-135deg);
+            box-sizing: border-box;
+        }
+
+        .gauge-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 300px;
+            height: 300px;
+            border: 40px solid #8e96ff;
+            /* Arc color from screenshot */
+            border-bottom-color: transparent;
+            border-left-color: transparent;
+            border-radius: 50%;
+            transform: rotate(-135deg);
+            /* Start at 0% */
+            box-sizing: border-box;
+            transition: transform 1s ease-out;
+        }
+
+        .score-center {
+            position: absolute;
+            top: 60px;
+            left: 0;
+            right: 0;
+            text-align: center;
+        }
+
+        .main-score-val {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .scaled-score-val {
+            font-size: 18px;
+            color: #666;
+            margin: 0;
+        }
+
+        .cefr-label {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 10px;
+            color: #444;
+        }
+
+        .more-details-btn {
+            background: white;
+            border: 2px solid #003366;
+            color: #003366;
+            padding: 10px 24px;
+            border-radius: 4px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        .section-scores-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            margin-bottom: 40px;
+            flex-wrap: wrap;
+        }
+
+        .section-box {
+            background: #f0f2ff;
+            /* Light bluish tint from screenshot */
+            padding: 30px;
+            border-radius: 8px;
+            width: 200px;
+            text-align: center;
+        }
+
+        .section-title {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .section-score-val {
+            font-size: 32px;
+            font-weight: 700;
+            color: #222;
+        }
+
+        .feedback-container {
+            text-align: left;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .feedback-section {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .feedback-section h3 {
+            margin-top: 0;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+
+        .feedback-section ul {
+            padding-left: 20px;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .feedback-section p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .btn-action {
+            margin-top: 40px;
+            margin-bottom: 60px;
+            padding: 14px 40px;
+            border-radius: 8px;
+            font-weight: 700;
+            cursor: pointer;
+            border: none;
+            background: var(--primary-teal);
+            color: white;
+            font-size: 16px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="header-teal">
+        Project Phoenix Writing Module
+    </div>
+
+    <div class="results-container">
+        <div class="id-info" id="userInfo">
+            Student No : 9250000008006318<br>
+            Project ID : PHX-2026-MOCK
+        </div>
+
+        <h1 class="title-hero">Your Writing Test Results</h1>
+        <div class="not-official-tag">NOT OFFICIAL</div>
+
+        <div class="overall-score-section">
+            <div class="score-label-sub">Writing Section Score</div>
+            <div class="gauge-container">
+                <div class="gauge-arc"></div>
+                <div class="gauge-fill" id="gaugeFill"></div>
+                <div class="score-center">
+                    <p class="main-score-val" id="rawScoreLabel">-- of 5</p>
+                    <p class="scaled-score-val" id="scaledScoreLabel">-- of 30</p>
+                </div>
+            </div>
+            <div class="cefr-label" id="cefrLabel">CEFR: --</div>
+            <button class="more-details-btn">MORE DETAILS</button>
+        </div>
+
+        <div class="section-scores-row">
+            <div class="section-box">
+                <div class="section-title">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                        <path
+                            d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+                    </svg>
+                    Writing
+                </div>
+                <div class="section-score-val" id="boxScore">-- of 5</div>
+            </div>
+        </div>
+
+        <div class="feedback-container">
+            <div class="feedback-section">
+                <h3>✅ Strengths</h3>
+                <ul id="strengthsList">
+                    <li>Evaluating your performance...</li>
+                </ul>
+            </div>
+
+            <div class="feedback-section">
+                <h3>❌ Weaknesses</h3>
+                <ul id="improvementsList">
+                    <li>Identifying areas for improvement...</li>
+                </ul>
+            </div>
+
+            <div class="feedback-section">
+                <h3>💬 Detailed Feedback</h3>
+                <p id="detailedFeedback">Please wait while we load your detailed feedback.</p>
+            </div>
+        </div>
+
+        <button class="btn-action" onclick="window.location.href='task-selection.html'">Practice Again</button>
+    </div>
+
+    <script>
+        // Load evaluation results
+        const evaluation = JSON.parse(localStorage.getItem('lastEvaluation') || '{}');
+        const username = localStorage.getItem('username') || 'Guest';
+
+        if (username) {
+            document.getElementById('userInfo').innerHTML = `
+                Username: ${username}<br>
+                Project ID: PHX-2026-MOCK
+            `;
+        }
+
+        function getCEFR(raw) {
+            if (raw >= 4.5) return 'C1';
+            if (raw >= 3.5) return 'B2';
+            if (raw >= 2.5) return 'B1';
+            if (raw >= 1.5) return 'A2';
+            return 'A1';
+        }
+
+        if (evaluation && (evaluation.rawScore !== undefined)) {
+            // Main Gauge
+            document.getElementById('rawScoreLabel').textContent = `${evaluation.rawScore} of 5`;
+            document.getElementById('scaledScoreLabel').textContent = `${evaluation.scaledScore} of 30`;
+
+            // Box Score
+            document.getElementById('boxScore').textContent = `${evaluation.rawScore} of 5`;
+
+            // Gauge Arc Fill Calculation
+            // -135deg (0%) to 45deg (100%) = 180deg range
+            const percentage = evaluation.rawScore / 5;
+            const rotation = -135 + (percentage * 180);
+
+            // Trigger animation
+            setTimeout(() => {
+                document.getElementById('gaugeFill').style.transform = `rotate(${rotation}deg)`;
+            }, 100);
+
+            // CEFR
+            document.getElementById('cefrLabel').textContent = `CEFR: ${getCEFR(evaluation.rawScore)}`;
+
+            // Strengths
+            const strengthsList = document.getElementById('strengthsList');
+            strengthsList.innerHTML = evaluation.strengths.map(s => `<li>${s}</li>`).join('');
+
+            // Weaknesses
+            const improvementsList = document.getElementById('improvementsList');
+            improvementsList.innerHTML = (evaluation.weaknesses || evaluation.improvements || []).map(i => `<li>${i}</li>`).join('');
+
+            // Detailed feedback
+            document.getElementById('detailedFeedback').textContent = evaluation.detailedFeedback;
+        } else if (evaluation && evaluation.overallScore) {
+            // Support for legacy 0-100 scores
+            const rawEquivalent = (evaluation.overallScore / 20).toFixed(1);
+            document.getElementById('rawScoreLabel').textContent = `${rawEquivalent} of 5`;
+            document.getElementById('scaledScoreLabel').textContent = `${Math.round(evaluation.overallScore * 0.3)} of 30`;
+            document.getElementById('boxScore').textContent = `${rawEquivalent} of 5`;
+            const rotation = -135 + ((evaluation.overallScore / 100) * 180);
+            setTimeout(() => {
+                document.getElementById('gaugeFill').style.transform = `rotate(${rotation}deg)`;
+            }, 100);
+            document.getElementById('cefrLabel').textContent = `CEFR: ${getCEFR(rawEquivalent)}`;
+            document.getElementById('strengthsList').innerHTML = (evaluation.strengths || []).map(s => `<li>${s}</li>`).join('');
+            document.getElementById('improvementsList').innerHTML = (evaluation.improvements || []).map(i => `<li>${i}</li>`).join('');
+            document.getElementById('detailedFeedback').textContent = evaluation.detailedFeedback;
+        } else {
+            // Fallback for missing evaluation
+            document.querySelector('.results-container').innerHTML = `
+                <div style="text-align: center; padding: 100px 20px;">
+                    <h2>No Results Found</h2>
+                    <p>Please complete a writing task first.</p>
+                    <button class="btn-action" onclick="window.location.href='task-selection.html'">
+                        Start New Task
+                    </button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+
+</html>

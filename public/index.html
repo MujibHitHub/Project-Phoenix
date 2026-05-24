@@ -2,12 +2,22 @@
 <html>
 
 <head>
-    <meta http-equiv="refresh" content="0; url=login.html" />
-    <title>Redirecting...</title>
+    <meta charset="UTF-8">
+    <title>Project Phoenix</title>
+    <script src="js/auth.js"></script>
 </head>
 
 <body>
-    <p>Loading application... If you are not redirected, <a href="login.html">click here</a>.</p>
+    <p>Loading application...</p>
+    <script>
+        if (PhoenixAuth.handleOAuthCallbackFromUrl()) {
+            // Redirecting after OAuth callback
+        } else if (PhoenixAuth.isAuthenticated()) {
+            window.location.href = 'dashboard.html';
+        } else {
+            window.location.href = 'login.html';
+        }
+    </script>
 </body>
 
 </html>

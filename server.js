@@ -1,14 +1,14 @@
+require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const fs = require('fs');
 const path = require('path');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { createClient } = require('@supabase/supabase-js');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const USERS_FILE = path.join(__dirname, 'users.json');
-const SESSIONS_FILE = path.join(__dirname, 'sessions.json');
 const CONFIG_FILE = path.join(__dirname, 'config.json');
 
 // Load configuration (Environment Variables first, then config.json)
@@ -23,135 +23,350 @@ try {
 
 const config = {
     GEMINI_API_KEY: process.env.GEMINI_API_KEY || localConfig.GEMINI_API_KEY,
+    GEMINI_KEYS_POOL: process.env.GEMINI_KEYS_POOL
+        ? process.env.GEMINI_KEYS_POOL.split(',').map(k => k.trim())
+        : (localConfig.GEMINI_KEYS_POOL || []),
     OPENAI_KEYS: process.env.OPENAI_KEYS
         ? process.env.OPENAI_KEYS.split(',').map(k => k.trim())
-        : (localConfig.OPENAI_KEYS || [])
+        : (localConfig.OPENAI_KEYS || []),
+    SUPABASE_URL: process.env.SUPABASE_URL || localConfig.SUPABASE_URL,
+    SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || localConfig.SUPABASE_ANON_KEY
 };
 
 // Initialize with a fallback or the actual key
 const genAI = new GoogleGenerativeAI(config.GEMINI_API_KEY || "Missing_Key");
 
+// Initialize Supabase client
+const supabase = config.SUPABASE_URL && config.SUPABASE_ANON_KEY 
+    ? createClient(config.SUPABASE_URL, config.SUPABASE_ANON_KEY)
+    : null;
+
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public'))); // Serve static files from public dir
+// Serve static files only for local development/runtime.
+// On Vercel production, static assets under /public are served directly by Vercel CDN.
+if (process.env.NODE_ENV !== 'production') {
+    app.use(express.static(path.join(__dirname, 'public')));
 
-// This ensures that when someone hits "/", Express knows exactly where index.html is
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
+    app.get('/', (req, res) => {
+        res.sendFile(path.join(__dirname, 'public', 'index.html'));
+    });
+}
 
-// Helper to read users
-const getUsers = () => {
+// Login Endpoint - Supabase email/password
+app.post('/api/login', async (req, res) => {
     try {
-        if (!fs.existsSync(USERS_FILE)) {
-            fs.writeFileSync(USERS_FILE, '[]', 'utf8');
-            return [];
+        if (!supabase) {
+            return res.status(500).json({ success: false, message: 'Supabase not configured' });
         }
-        const data = fs.readFileSync(USERS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Error reading users file:", err);
-        return [];
-    }
-};
 
-// Helper to write users
-const saveUsers = (users) => {
-    try {
-        fs.writeFileSync(USERS_FILE, JSON.stringify(users, null, 2), 'utf8');
-    } catch (err) {
-        console.error("Error writing users file:", err);
-    }
-};
-
-// Helper to read sessions
-const getSessions = () => {
-    try {
-        if (!fs.existsSync(SESSIONS_FILE)) {
-            fs.writeFileSync(SESSIONS_FILE, '[]', 'utf8');
-            return [];
+        const { username, password, email } = req.body;
+        const loginEmail = (email || username || '').trim().toLowerCase();
+        if (!loginEmail || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password are required' });
         }
-        const data = fs.readFileSync(SESSIONS_FILE, 'utf8');
-        return JSON.parse(data);
-    } catch (err) {
-        console.error("Error reading sessions file:", err);
-        return [];
-    }
-};
+        if (!loginEmail.includes('@')) {
+            return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+        }
 
-// Helper to write sessions
-const saveSessions = (sessions) => {
+        const { data, error } = await supabase.auth.signInWithPassword({
+            email: loginEmail,
+            password
+        });
+
+        if (error) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+
+        const profile = await getUserProfile(data.user.id);
+        const displayName = profile?.username || data.user.user_metadata?.username || loginEmail.split('@')[0];
+
+        res.json({
+            success: true,
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            user_id: data.user.id,
+            email: data.user.email,
+            username: displayName
+        });
+    } catch (e) {
+        console.error('Login error:', e);
+        res.status(500).json({ success: false, message: 'Login failed' });
+    }
+});
+
+// Register Endpoint - Supabase email/password
+app.post('/api/register', async (req, res) => {
     try {
-        fs.writeFileSync(SESSIONS_FILE, JSON.stringify(sessions, null, 2), 'utf8');
-    } catch (err) {
-        console.error("Error writing sessions file:", err);
-    }
-};
+        if (!supabase) {
+            return res.status(500).json({ success: false, message: 'Supabase not configured' });
+        }
 
-// Login Endpoint
-app.post('/api/login', (req, res) => {
-    const { username, password } = req.body;
-    const users = getUsers();
-    const user = users.find(u => u.username === username && u.password === password);
+        const { username, password, email } = req.body;
+        const registerEmail = (email || username || '').trim().toLowerCase();
+        const displayName = (username || registerEmail.split('@')[0] || 'user').trim();
 
-    if (user) {
-        res.json({ success: true, message: 'Login successful', username });
-    } else {
-        res.status(401).json({ success: false, message: 'Invalid credentials' });
+        if (!registerEmail || !password) {
+            return res.status(400).json({ success: false, message: 'Email and password are required' });
+        }
+        if (!registerEmail.includes('@')) {
+            return res.status(400).json({ success: false, message: 'Please enter a valid email address' });
+        }
+        if (password.length < 6) {
+            return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
+        }
+
+        const { data, error } = await supabase.auth.signUp({
+            email: registerEmail,
+            password,
+            options: {
+                data: { username: displayName }
+            }
+        });
+
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
+
+        if (data.user) {
+            await supabase.from('user_profiles').upsert({
+                user_id: data.user.id,
+                content: JSON.stringify({ username: displayName, seenScenarios: [] })
+            }, { onConflict: 'user_id' });
+        }
+
+        if (!data.session) {
+            return res.json({
+                success: true,
+                requiresConfirmation: true,
+                message: 'Account created. Check your email to confirm, then sign in.'
+            });
+        }
+
+        res.json({
+            success: true,
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            user_id: data.user.id,
+            email: data.user.email,
+            username: displayName
+        });
+    } catch (e) {
+        console.error('Register error:', e);
+        res.status(500).json({ success: false, message: 'Registration failed' });
     }
 });
 
-// Register Endpoint
-app.post('/api/register', (req, res) => {
-    const { username, password } = req.body;
-    const users = getUsers();
+// OAuth Callback Endpoint
+app.get('/api/auth/callback', async (req, res) => {
+    try {
+        const { code } = req.query;
 
-    if (users.find(u => u.username === username)) {
-        return res.status(400).json({ success: false, message: 'User already exists' });
-    }
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'No code provided' });
+        }
 
-    users.push({ username, password });
-    saveUsers(users);
-    res.json({ success: true, message: 'User registered successfully' });
-});
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
 
-// Get all sessions for a user
-app.get('/api/sessions/:username', (req, res) => {
-    const { username } = req.params;
-    const sessions = getSessions();
-    const userSessions = sessions.filter(s => s.userId === username);
-    res.json({ success: true, sessions: userSessions });
-});
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
 
-// Get specific session
-app.get('/api/sessions/:username/:sessionId', (req, res) => {
-    const { username, sessionId } = req.params;
-    const sessions = getSessions();
-    const session = sessions.find(s => s.userId === username && s.id === sessionId);
-
-    if (session) {
-        res.json({ success: true, session });
-    } else {
-        res.status(404).json({ success: false, message: 'Session not found' });
+        res.redirect(`/login.html?access_token=${data.session.access_token}&refresh_token=${data.session.refresh_token}&user_id=${data.user.id}&email=${encodeURIComponent(data.user.email || '')}`);
+    } catch (e) {
+        console.error('OAuth callback error:', e);
+        res.status(500).json({ success: false, message: 'OAuth callback failed' });
     }
 });
 
-// Save new session
-app.post('/api/sessions', (req, res) => {
-    const sessionData = req.body;
-    const sessions = getSessions();
+async function getUserProfile(userId) {
+    const { data: profile } = await supabase
+        .from('user_profiles')
+        .select('content')
+        .eq('user_id', userId)
+        .single();
 
-    // Generate unique session ID
-    const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    const newSession = {
-        id: sessionId,
-        ...sessionData,
-        date: new Date().toISOString()
+    if (!profile?.content) return null;
+    try {
+        return JSON.parse(profile.content);
+    } catch {
+        return null;
+    }
+}
+
+function mapSessionForDashboard(row) {
+    const evaluation = row.evaluation || {};
+    const taskType = row.task_type || evaluation.taskType || 'email';
+
+    if (taskType === 'full-test' || evaluation.details) {
+        const emailEval = evaluation.details?.email || {};
+        const academicEval = evaluation.details?.academic || {};
+        const emailScore = emailEval.scaledScore ? Math.round((emailEval.scaledScore / 30) * 100) : (emailEval.overallScore || 0);
+        const academicScore = academicEval.scaledScore ? Math.round((academicEval.scaledScore / 30) * 100) : (academicEval.overallScore || 0);
+        const avgScore = Math.round((emailScore + academicScore) / 2);
+
+        return {
+            id: row.id,
+            taskType: 'full-test',
+            score: evaluation.score || avgScore,
+            date: row.created_at,
+            details: evaluation.details,
+            feedback: evaluation.feedback || {
+                breakdown: { taskAchievement: 0, organization: 0, languageUse: 0, grammar: 0 },
+                strengths: [],
+                improvements: [],
+                detailedFeedback: evaluation.detailedFeedback || ''
+            }
+        };
+    }
+
+    const feedback = evaluation.feedback || {
+        breakdown: {
+            taskAchievement: Math.round((evaluation.breakdown?.taskAchievement || 0) * 5),
+            organization: Math.round((evaluation.breakdown?.organization || 0) * 5),
+            languageUse: Math.round((evaluation.breakdown?.languageUse || 0) * 5),
+            grammar: Math.round((evaluation.breakdown?.grammar || 0) * 5)
+        },
+        strengths: evaluation.strengths || [],
+        improvements: evaluation.weaknesses || evaluation.improvements || [],
+        detailedFeedback: evaluation.detailedFeedback || ''
     };
 
-    sessions.push(newSession);
-    saveSessions(sessions);
-    res.json({ success: true, session: newSession });
+    let score = evaluation.score;
+    if (typeof score !== 'number') {
+        if (typeof evaluation.scaledScore === 'number') score = Math.round((evaluation.scaledScore / 30) * 100);
+        else if (typeof evaluation.overallScore === 'number') score = Math.round(evaluation.overallScore);
+        else if (typeof evaluation.rawScore === 'number') score = Math.round((evaluation.rawScore / 5) * 100);
+        else score = 0;
+    }
+
+    return {
+        id: row.id,
+        taskType: taskType,
+        score,
+        date: row.created_at,
+        feedback
+    };
+}
+
+// Get all sessions for a user - Supabase (using access token)
+app.get('/api/sessions', async (req, res) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'No access token provided' });
+        }
+
+        const accessToken = authHeader.substring(7);
+
+        // Verify the access token and get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+        if (userError || !user) {
+            return res.status(401).json({ success: false, message: 'Invalid access token' });
+        }
+
+        // Fetch sessions from Supabase
+        const { data: sessions, error } = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        res.json({ success: true, sessions: (sessions || []).map(mapSessionForDashboard) });
+    } catch (e) {
+        console.error('Get sessions error:', e);
+        res.status(500).json({ success: false, message: 'Failed to fetch sessions' });
+    }
+});
+
+// Get specific session - Supabase (using access token)
+app.get('/api/sessions/:sessionId', async (req, res) => {
+    try {
+        const { sessionId } = req.params;
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'No access token provided' });
+        }
+
+        const accessToken = authHeader.substring(7);
+
+        // Verify the access token and get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+        if (userError || !user) {
+            return res.status(401).json({ success: false, message: 'Invalid access token' });
+        }
+
+        // Fetch specific session from Supabase
+        const { data: session, error } = await supabase
+            .from('sessions')
+            .select('*')
+            .eq('id', sessionId)
+            .eq('user_id', user.id)
+            .single();
+
+        if (error || !session) {
+            return res.status(404).json({ success: false, message: 'Session not found' });
+        }
+
+        res.json({ success: true, session });
+    } catch (e) {
+        console.error('Get session error:', e);
+        res.status(500).json({ success: false, message: 'Failed to fetch session' });
+    }
+});
+
+// Save new session - Supabase (using access token)
+app.post('/api/sessions', async (req, res) => {
+    try {
+        const sessionData = req.body;
+        const authHeader = req.headers.authorization;
+        if (!authHeader || !authHeader.startsWith('Bearer ')) {
+            return res.status(401).json({ success: false, message: 'No access token provided' });
+        }
+
+        const accessToken = authHeader.substring(7);
+
+        // Verify the access token and get user
+        const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+        if (userError || !user) {
+            return res.status(401).json({ success: false, message: 'Invalid access token' });
+        }
+
+        const evaluationPayload = {
+            ...(sessionData.evaluation || {}),
+            score: sessionData.score,
+            feedback: sessionData.feedback,
+            details: sessionData.details,
+            taskType: sessionData.taskType
+        };
+
+        // Insert session into Supabase
+        const { data: session, error } = await supabase
+            .from('sessions')
+            .insert({
+                user_id: user.id,
+                task_type: sessionData.taskType,
+                scenario_id: sessionData.scenarioId || null,
+                scenario_text: sessionData.scenario || sessionData.scenarioText || null,
+                user_response: sessionData.userResponse || null,
+                evaluation: evaluationPayload
+            })
+            .select()
+            .single();
+
+        if (error) {
+            return res.status(500).json({ success: false, message: error.message });
+        }
+
+        res.json({ success: true, session: mapSessionForDashboard(session) });
+    } catch (e) {
+        console.error('Save session error:', e);
+        res.status(500).json({ success: false, message: 'Failed to save session' });
+    }
 });
 
 // AI Evaluation Endpoint
@@ -215,7 +430,7 @@ Return ONLY JSON.`;
             console.log(`[Evaluation] Found ${geminiKeys.length} Gemini keys. Starting rotation...`);
 
             // Try several model versions for each key if needed, or just stick to a stable one
-            const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro"];
+            const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-1.5-flash"];
 
             mainLoop: for (let i = 0; i < geminiKeys.length; i++) {
                 const key = geminiKeys[i];
@@ -266,7 +481,7 @@ Return ONLY JSON.`;
         if (!evaluation && config.GEMINI_API_KEY) {
             console.log('[Evaluation] All OpenAI keys failed or missing. Falling back to Gemini...');
             try {
-                const modelsToTry = ["gemini-1.5-flash", "gemini-1.5-pro", "gemini-1.0-pro", "gemini-2.0-flash-exp"];
+                const modelsToTry = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-2.0-flash", "gemini-1.5-flash"];
                 for (const modelName of modelsToTry) {
                     try {
                         console.log(`[Evaluation] Attempting Gemini (${modelName})...`);
@@ -362,7 +577,9 @@ const getScenarios = () => {
 // AI scenario endpoint - Now pulls from pre-generated pool with NO-REPEAT logic
 app.get('/api/scenarios/generate-ai', async (req, res) => {
     try {
-        const { type, username } = req.query;
+        const { type } = req.query;
+        const authHeader = req.headers.authorization;
+        
         if (!type) {
             return res.status(400).json({ success: false, message: 'Type is required' });
         }
@@ -376,38 +593,71 @@ app.get('/api/scenarios/generate-ai', async (req, res) => {
 
         let selected = null;
 
-        if (username) {
-            const users = getUsers();
-            const userIndex = users.findIndex(u => u.username === username);
-
-            if (userIndex !== -1) {
-                if (!users[userIndex].seenScenarios) {
-                    users[userIndex].seenScenarios = [];
-                }
-
-                // Filter out seen scenarios
-                let availableScenarios = pool.filter(s => !users[userIndex].seenScenarios.includes(s.id));
-
-                if (availableScenarios.length === 0) {
-                    // All scenarios seen! Reset tracking for this type
-                    console.log(`[Scenario] User ${username} has seen all ${type} scenarios. Resetting pool.`);
-                    users[userIndex].seenScenarios = users[userIndex].seenScenarios.filter(id => !pool.map(ps => ps.id).includes(id));
-                    availableScenarios = pool;
-                }
-
-                selected = availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
-
-                // Track this pick
-                users[userIndex].seenScenarios.push(selected.id);
-                saveUsers(users);
-                console.log(`[Scenario] Serving ${type} scenario "${selected.id}" to ${username}.`);
+        if (authHeader && supabase) {
+            // Use Supabase for user tracking with access token
+            if (!authHeader.startsWith('Bearer ')) {
+                return res.status(401).json({ success: false, message: 'Invalid authorization header' });
             }
+
+            const accessToken = authHeader.substring(7);
+
+            // Verify the access token and get user
+            const { data: { user }, error: userError } = await supabase.auth.getUser(accessToken);
+            if (userError || !user) {
+                return res.status(401).json({ success: false, message: 'Invalid access token' });
+            }
+
+            // Get user's seen scenarios from user_profiles
+            const { data: profile, error: profileError } = await supabase
+                .from('user_profiles')
+                .select('content')
+                .eq('user_id', user.id)
+                .single();
+
+            let seenScenarios = [];
+            if (profile && profile.content) {
+                try {
+                    const profileData = JSON.parse(profile.content);
+                    seenScenarios = profileData.seenScenarios || [];
+                } catch (e) {
+                    console.error('Error parsing profile content:', e);
+                }
+            }
+
+            // Filter out seen scenarios
+            let availableScenarios = pool.filter(s => !seenScenarios.includes(s.id));
+
+            if (availableScenarios.length === 0) {
+                // All scenarios seen! Reset tracking for this type
+                console.log(`[Scenario] User ${user.email} has seen all ${type} scenarios. Resetting pool.`);
+                seenScenarios = seenScenarios.filter(id => !pool.map(ps => ps.id).includes(id));
+                availableScenarios = pool;
+            }
+
+            selected = availableScenarios[Math.floor(Math.random() * availableScenarios.length)];
+
+            // Track this pick in Supabase
+            seenScenarios.push(selected.id);
+            const { error: updateError } = await supabase
+                .from('user_profiles')
+                .upsert({
+                    user_id: user.id,
+                    content: JSON.stringify({ seenScenarios })
+                }, {
+                    onConflict: 'user_id'
+                });
+
+            if (updateError) {
+                console.error('Error updating user profile:', updateError);
+            }
+
+            console.log(`[Scenario] Serving ${type} scenario "${selected.id}" to ${user.email}.`);
         }
 
-        // Fallback to purely random if no username provided or user not found
+        // Fallback to purely random if no auth provided
         if (!selected) {
             selected = pool[Math.floor(Math.random() * pool.length)];
-            console.log(`[Scenario] Serving random ${type} scenario: ${selected.id} (Guest/Fallback)`);
+            console.log(`[Scenario] Serving random ${type} scenario: ${selected.id} (No auth)`);
         }
 
         res.json({ success: true, scenario: selected.scenario, id: selected.id });

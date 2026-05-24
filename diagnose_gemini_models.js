@@ -1,3 +1,4 @@
+require('dotenv').config();
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const fs = require('fs');
 
@@ -17,10 +18,17 @@ async function testModel(modelName, key) {
 }
 
 async function start() {
-    const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-    const models = ["gemini-pro", "gemini-1.0-pro", "gemini-1.5-flash", "gemini-1.5-pro"];
+    let localConfig = {};
+    try {
+        if (fs.existsSync('config.json')) {
+            localConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+        }
+    } catch (e) {}
+
+    const geminiKey = process.env.GEMINI_API_KEY || localConfig.GEMINI_API_KEY;
+    const models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-2.5-pro"];
     for (const m of models) {
-        await testModel(m, config.GEMINI_API_KEY);
+        await testModel(m, geminiKey);
     }
 }
 

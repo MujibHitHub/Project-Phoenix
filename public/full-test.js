@@ -2,7 +2,7 @@ const steps = [
     { type: 'instruction', file: 'Examinee Information (2_1_2026 9：36：14 AM).html' },
     { type: 'instruction', file: 'Examinee Information (2_1_2026 9：37：28 AM).html' },
     { type: 'task', file: 'email-task.html', duration: 7 * 60, title: 'Writing Task 1: Email' },
-    { type: 'instruction', file: 'Examinee Information (2_1_2026 9：37：53 AM).html' },
+    { type: 'instruction', file: 'Examinee Information (2_1_2026 9：37：44 AM).html' },
     { type: 'task', file: 'academic-task.html', duration: 10 * 60, title: 'Writing Task 2: Academic Discussion' },
     { type: 'instruction', file: 'Examinee Information (2_1_2026 9：38：04 AM).html' },
     { type: 'instruction', file: 'full-test-results.html' }
@@ -11,13 +11,64 @@ const steps = [
 let currentStepIndex = 0;
 const iframe = document.getElementById('test-iframe');
 const progressFill = document.getElementById('progressFill');
+let instructionTimerInterval = null;
+let emailMasterTimerInterval = null;
+let academicMasterTimerInterval = null;
+
+const TIMER_STORAGE_KEYS = {
+    'email-task.html': 'fullTest_email_time_remaining',
+    'academic-task.html': 'fullTest_academic_time_remaining'
+};
+const EMAIL_TIMER_KEY = 'fullTest_email_time_remaining';
+const EMAIL_END_KEY = 'fullTest_email_end_at_ms';
+const EMAIL_STARTED_KEY = 'fullTest_email_started';
+const ACADEMIC_TIMER_KEY = 'fullTest_academic_time_remaining';
+const ACADEMIC_END_KEY = 'fullTest_academic_end_at_ms';
+const ACADEMIC_STARTED_KEY = 'fullTest_academic_started';
+
+function resetFullTestTimers() {
+    [
+        EMAIL_TIMER_KEY,
+        EMAIL_END_KEY,
+        EMAIL_STARTED_KEY,
+        ACADEMIC_TIMER_KEY,
+        ACADEMIC_END_KEY,
+        ACADEMIC_STARTED_KEY
+    ].forEach((k) => sessionStorage.removeItem(k));
+}
+
+function formatCountdown(seconds) {
+    const safe = Math.max(0, Number.isFinite(seconds) ? seconds : 0);
+    const hours = Math.floor(safe / 3600);
+    const mins = Math.floor((safe % 3600) / 60);
+    const secs = safe % 60;
+    return `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
 
 function loadStep(index) {
     if (index >= steps.length) return;
 
+    clearInterval(instructionTimerInterval);
+    instructionTimerInterval = null;
+
     currentStepIndex = index;
     const step = steps[index];
-    const url = step.type === 'task' ? `${step.file}?testMode=full` : step.file;
+    syncEmailMasterTimer(index);
+    syncAcademicMasterTimer(index);
+    let url = step.type === 'task' ? `${step.file}?testMode=full` : step.file;
+
+    if (step.type === 'task') {
+        const timerKey = TIMER_STORAGE_KEYS[step.file];
+        const remaining = timerKey ? parseInt(sessionStorage.getItem(timerKey), 10) : NaN;
+        if (!Number.isNaN(remaining) && remaining >= 0) {
+            url += `&remaining=${remaining}`;
+        }
+    }
+
+    // Force a fresh iframe load when returning to task pages (prevents stale duplicated UI state).
+    if (step.type === 'task') {
+        url += `&_cb=${Date.now()}`;
+    }
 
     console.log(`Loading step ${index + 1}: ${step.file}`);
     iframe.src = url;
@@ -27,18 +78,135 @@ function loadStep(index) {
     progressFill.style.width = `${progress}%`;
 }
 
+function syncEmailMasterTimer(stepIndex) {
+    const emailTaskIndex = steps.findIndex(s => s.file === 'email-task.html');
+    const emailInstructionIndex = emailTaskIndex + 1;
+    const inEmailPhase = stepIndex === emailTaskIndex || stepIndex === emailInstructionIndex;
+
+    if (!inEmailPhase) {
+        clearInterval(emailMasterTimerInterval);
+        emailMasterTimerInterval = null;
+        return;
+    }
+
+    if (emailMasterTimerInterval) return;
+
+    const defaultDuration = steps[emailTaskIndex]?.duration || 420;
+    const phaseStarted = sessionStorage.getItem(EMAIL_STARTED_KEY) === '1';
+    if (!phaseStarted) {
+        sessionStorage.setItem(EMAIL_STARTED_KEY, '1');
+        sessionStorage.setItem(EMAIL_TIMER_KEY, String(defaultDuration));
+        sessionStorage.setItem(EMAIL_END_KEY, String(Date.now() + defaultDuration * 1000));
+    }
+
+    const savedEnd = parseInt(sessionStorage.getItem(EMAIL_END_KEY), 10);
+    const savedRemaining = parseInt(sessionStorage.getItem(EMAIL_TIMER_KEY), 10);
+
+    let endAtMs = savedEnd;
+    if (Number.isNaN(endAtMs) || endAtMs <= Date.now()) {
+        const baseRemaining = !Number.isNaN(savedRemaining) && savedRemaining >= 0 ? savedRemaining : defaultDuration;
+        endAtMs = Date.now() + baseRemaining * 1000;
+        sessionStorage.setItem(EMAIL_END_KEY, String(endAtMs));
+    }
+
+    const tick = () => {
+        const remaining = Math.max(0, Math.ceil((endAtMs - Date.now()) / 1000));
+        sessionStorage.setItem(EMAIL_TIMER_KEY, String(remaining));
+
+        // If user is on Q1 time-remaining page and runs out of time, continue automatically.
+        if (remaining <= 0 && currentStepIndex === emailInstructionIndex) {
+            clearInterval(emailMasterTimerInterval);
+            emailMasterTimerInterval = null;
+            loadNextStep();
+        }
+    };
+
+    tick();
+    emailMasterTimerInterval = setInterval(tick, 1000);
+}
+
+function syncAcademicMasterTimer(stepIndex) {
+    const academicTaskIndex = steps.findIndex(s => s.file === 'academic-task.html');
+    const academicInstructionIndex = academicTaskIndex + 1;
+    const inAcademicPhase = stepIndex === academicTaskIndex || stepIndex === academicInstructionIndex;
+
+    if (!inAcademicPhase) {
+        clearInterval(academicMasterTimerInterval);
+        academicMasterTimerInterval = null;
+        return;
+    }
+
+    if (academicMasterTimerInterval) return;
+
+    const defaultDuration = steps[academicTaskIndex]?.duration || 600;
+    const phaseStarted = sessionStorage.getItem(ACADEMIC_STARTED_KEY) === '1';
+    if (!phaseStarted) {
+        sessionStorage.setItem(ACADEMIC_STARTED_KEY, '1');
+        sessionStorage.setItem(ACADEMIC_TIMER_KEY, String(defaultDuration));
+        sessionStorage.setItem(ACADEMIC_END_KEY, String(Date.now() + defaultDuration * 1000));
+    }
+
+    const savedEnd = parseInt(sessionStorage.getItem(ACADEMIC_END_KEY), 10);
+    const savedRemaining = parseInt(sessionStorage.getItem(ACADEMIC_TIMER_KEY), 10);
+
+    let endAtMs = savedEnd;
+    if (Number.isNaN(endAtMs) || endAtMs <= Date.now()) {
+        const baseRemaining = !Number.isNaN(savedRemaining) && savedRemaining >= 0 ? savedRemaining : defaultDuration;
+        endAtMs = Date.now() + baseRemaining * 1000;
+        sessionStorage.setItem(ACADEMIC_END_KEY, String(endAtMs));
+    }
+
+    const tick = () => {
+        const remaining = Math.max(0, Math.ceil((endAtMs - Date.now()) / 1000));
+        sessionStorage.setItem(ACADEMIC_TIMER_KEY, String(remaining));
+
+        // While on "Time Remaining" instruction page for Q2, force-continue on timeout.
+        if (remaining <= 0 && currentStepIndex === academicInstructionIndex) {
+            clearInterval(academicMasterTimerInterval);
+            academicMasterTimerInterval = null;
+            loadNextStep();
+        }
+    };
+
+    tick();
+    academicMasterTimerInterval = setInterval(tick, 1000);
+}
+
 // Global listener for iframe messages
 window.addEventListener('message', (event) => {
     if (event.data === 'nextStep') {
         loadNextStep();
+        return;
+    }
+
+    if (event.data && typeof event.data === 'object' && event.data.type === 'nextStep') {
+        loadNextStep(event.data);
     }
 });
 
-function loadNextStep() {
+function loadNextStep(context = {}) {
+    // When a task timer expires on the writing page, skip that task's time-remaining notice page.
+    if (context.reason === 'timeout' && currentStepIndex < steps.length - 1) {
+        const currentFile = steps[currentStepIndex].file;
+        if (currentFile === 'email-task.html' || currentFile === 'academic-task.html') {
+            const skipTo = currentStepIndex + 2;
+            if (skipTo < steps.length) {
+                loadStep(skipTo);
+                return;
+            }
+        }
+    }
+
     if (currentStepIndex < steps.length - 1) {
         loadStep(currentStepIndex + 1);
     } else {
         window.location.href = 'dashboard.html';
+    }
+}
+
+function loadPreviousStep() {
+    if (currentStepIndex > 0) {
+        loadStep(currentStepIndex - 1);
     }
 }
 
@@ -53,16 +221,27 @@ iframe.onload = () => {
             const handleNavClick = (e) => {
                 const target = e.target.closest('button, a, [role="button"], tc-nav-button-td, .btn, .btn-navigation');
                 if (target) {
+                    if (target.hasAttribute('data-no-intercept')) return false;
                     const text = target.textContent.trim().toLowerCase();
                     const label = target.getAttribute('label-value') || '';
+                    const normalizedLabel = label.toLowerCase();
 
                     if (text.includes('continue') || text.includes('next') || text.includes('begin') ||
-                        label.toLowerCase().includes('continue') || label.toLowerCase().includes('next') || label.toLowerCase().includes('begin')) {
+                        normalizedLabel.includes('continue') || normalizedLabel.includes('next') || normalizedLabel.includes('begin')) {
 
                         console.log('Intercepted navigation click:', text || label);
                         e.preventDefault();
                         e.stopPropagation();
                         loadNextStep();
+                        return true;
+                    }
+
+                    if (text.includes('back') || text.includes('previous') || text.includes('return') ||
+                        normalizedLabel.includes('back') || normalizedLabel.includes('previous') || normalizedLabel.includes('return')) {
+                        console.log('Intercepted back click:', text || label);
+                        e.preventDefault();
+                        e.stopPropagation();
+                        loadPreviousStep();
                         return true;
                     }
                 }
@@ -99,6 +278,25 @@ iframe.onload = () => {
                 attempts++;
             }, 500);
 
+            const timerDisplay = doc.querySelector('#timerDisplayID .timer-display, .timer-display');
+            const emailTaskIndex = steps.findIndex(s => s.file === 'email-task.html');
+            const emailInstructionIndex = emailTaskIndex + 1;
+            const academicTaskIndex = steps.findIndex(s => s.file === 'academic-task.html');
+            const academicInstructionIndex = academicTaskIndex + 1;
+
+            if (timerDisplay && (currentStepIndex === emailInstructionIndex || currentStepIndex === academicInstructionIndex)) {
+                const updateInstructionTimer = () => {
+                    const timerKey = currentStepIndex === emailInstructionIndex ? EMAIL_TIMER_KEY : ACADEMIC_TIMER_KEY;
+                    const remaining = parseInt(sessionStorage.getItem(timerKey), 10);
+                    if (!Number.isNaN(remaining)) {
+                        timerDisplay.textContent = formatCountdown(remaining);
+                    }
+                };
+
+                updateInstructionTimer();
+                instructionTimerInterval = setInterval(updateInstructionTimer, 1000);
+            }
+
         } catch (e) {
             console.error('Could not access iframe content (Security?)', e);
             // In case of cross-origin or other errors, show fallback
@@ -121,4 +319,5 @@ function hideFallbackButton() {
 }
 
 // Initial load
+resetFullTestTimers();
 loadStep(0);

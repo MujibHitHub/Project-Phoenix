@@ -6,11 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Phoenix | Dashboard</title>
     <link rel="stylesheet" href="styles/dashboard.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Spline Viewer module script for 3D interactive background -->
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 </head>
 
 <body>
+    <!-- 3D Spline Background -->
+    <div class="spline-container">
+        <spline-viewer id="splineScene" url="https://prod.spline.design/6Wq1Q7YTyMZO1gTh/scene.splinecode"></spline-viewer>
+    </div>
+
+    <!-- Suspense Fallback Loader Screen -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <span class="loader"></span>
+            <p>Initializing Dashboard...</p>
+        </div>
+    </div>
+
     <div class="dashboard-container">
         <!-- Header -->
         <header class="dashboard-header">
@@ -27,13 +42,13 @@
         <!-- Start New Session Buttons -->
         <section class="action-section">
             <button class="btn-start-session" id="startSessionBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M12 5v14M5 12h14" />
                 </svg>
                 Task Selection
             </button>
             <button class="btn-start-session btn-full-test" id="startFullTestBtn">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                     <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
                 </svg>
                 Start Full Test
@@ -47,13 +62,17 @@
                 <canvas id="scoreChart"></canvas>
             </div>
             <div class="chart-legend">
-                <div class="legend-item">
+                <div class="legend-item" style="color: #077F83;">
                     <span class="legend-dot" style="background: #077F83;"></span>
                     <span>Email Tasks</span>
                 </div>
-                <div class="legend-item">
+                <div class="legend-item" style="color: #2B8084;">
                     <span class="legend-dot" style="background: #2B8084;"></span>
                     <span>Academic Discussion</span>
+                </div>
+                <div class="legend-item" style="color: #FFC107;">
+                    <span class="legend-dot" style="background: #FFC107;"></span>
+                    <span>Full Tests</span>
                 </div>
             </div>
         </section>
@@ -76,7 +95,7 @@
                             d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                     <p>No sessions yet</p>
-                    <span>Click "Start New Session" to begin your TOEFL writing practice!</span>
+                    <span>Click "Task Selection" or "Start Full Test" to begin your practice!</span>
                 </div>
             </div>
         </section>
@@ -84,36 +103,50 @@
 
     <!-- Generation Loading Overlay -->
     <div id="generationOverlay"
-        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; flex-direction: column; justify-content: center; align-items: center; color: white;">
-        <div class="spinner"
-            style="width: 50px; height: 50px; border: 5px solid rgba(255,255,255,0.3); border-top: 5px solid #00acc1; border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 20px;">
-        </div>
-        <h2 id="genStatus">Generating AI Scenarios...</h2>
-        <p style="margin-top: 10px; opacity: 0.8;">Preparing your personalized TOEFL Full Test</p>
-        <style>
-            @keyframes spin {
-                0% {
-                    transform: rotate(0deg);
-                }
-
-                100% {
-                    transform: rotate(360deg);
-                }
-            }
-        </style>
+        style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(9, 13, 22, 0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; color: white; backdrop-filter: blur(20px);">
+        <div class="loader" style="margin-bottom: 24px;"></div>
+        <h2 id="genStatus" style="font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px;">Generating AI Scenarios...</h2>
+        <p style="opacity: 0.7; font-size: 14px; font-weight: 500;">Preparing your personalized TOEFL Full Test</p>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
-        // Get username from local storage
-        const currentUser = localStorage.getItem('username') || 'Guest';
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
+        }
+
+        const currentUser = localStorage.getItem('currentUser') || localStorage.getItem('username') || 'User';
         document.getElementById('username').textContent = currentUser;
+
+        // Loader Screen Transition
+        const spline = document.getElementById('splineScene');
+        const pageLoader = document.getElementById('pageLoader');
+        
+        if (spline) {
+            spline.addEventListener('load', () => {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            });
+        }
+
+        // Safety timeout to hide loader if Spline takes too long
+        setTimeout(() => {
+            if (pageLoader && pageLoader.style.display !== 'none') {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            }
+        }, 4000);
 
         let sessionsData = [];
         let scoreChart = null;
 
-        // Logout functionality
+        // Logout functionality (clearing both username key variants)
         document.getElementById('logoutBtn').addEventListener('click', () => {
-            localStorage.removeItem('username');
+            PhoenixAuth.clearAuthSession();
             window.location.href = 'login.html';
         });
 
@@ -130,9 +163,10 @@
             try {
                 // Generate fresh scenarios for both tasks (with cache-busting)
                 const timestamp = new Date().getTime();
+                const authHeaders = PhoenixAuth.getAuthHeaders();
                 const [emailRes, acadRes] = await Promise.all([
-                    fetch(`/api/scenarios/generate-ai?type=email&t=${timestamp}&username=${encodeURIComponent(currentUser)}`).then(r => r.json()),
-                    fetch(`/api/scenarios/generate-ai?type=academic&t=${timestamp}&username=${encodeURIComponent(currentUser)}`).then(r => r.json())
+                    fetch(`/api/scenarios/generate-ai?type=email&t=${timestamp}`, { headers: authHeaders }).then(r => r.json()),
+                    fetch(`/api/scenarios/generate-ai?type=academic&t=${timestamp}`, { headers: authHeaders }).then(r => r.json())
                 ]);
 
                 if (emailRes.success && acadRes.success) {
@@ -155,7 +189,9 @@
         // Load user sessions
         async function loadSessions() {
             try {
-                const response = await fetch(`/api/sessions/${currentUser}`);
+                const response = await fetch('/api/sessions', {
+                    headers: PhoenixAuth.getAuthHeaders()
+                });
                 const data = await response.json();
 
                 if (data.success) {
@@ -248,13 +284,13 @@
                         </div>
                     </div>
                     ` : `
-                    <div class="full-test-mini-report" style="margin: 10px 0; color: #666; font-size: 0.9rem;">
+                    <div class="full-test-mini-report" style="margin: 10px 0; color: var(--text-secondary); font-size: 0.9rem; font-weight: 500;">
                         <p>Includes Email Task (${session.details.email.overallScore}/100) and Academic Discussion (${session.details.academic.overallScore}/100).</p>
                     </div>
                     `}
                     <button class="btn-expand" onclick="toggleFeedback('${session.id}')">
                         <span class="expand-text">View Detailed Feedback</span>
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path d="M19 9l-7 7-7-7"/>
                         </svg>
                     </button>
@@ -271,13 +307,13 @@
                                 </div>
                             </div>
                         ` : `
-                            <div class="feedback-section">
+                            <div class="feedback-section strengths">
                                 <h4>✅ Strengths</h4>
                                 <ul>
                                     ${session.feedback.strengths.map(s => `<li>${s}</li>`).join('')}
                                 </ul>
                             </div>
-                            <div class="feedback-section">
+                            <div class="feedback-section improvements">
                                 <h4>📝 Areas for Improvement</h4>
                                 <ul>
                                     ${session.feedback.improvements.map(i => `<li>${i}</li>`).join('')}
@@ -326,15 +362,16 @@
                 return;
             }
 
-            const emailSessions = sessions.filter(s => s.taskType === 'email');
-            const academicSessions = sessions.filter(s => s.taskType === 'academic');
-            const fullTests = sessions.filter(s => s.taskType === 'full-test');
-
             const labels = sessions.map((_, i) => `Session ${i + 1}`);
 
             if (scoreChart) {
                 scoreChart.destroy();
             }
+
+            // Chart styling for premium glass theme
+            Chart.defaults.color = '#94a3b8';
+            Chart.defaults.font.family = "'Inter', sans-serif";
+            Chart.defaults.font.weight = '500';
 
             scoreChart = new Chart(ctx, {
                 type: 'line',
@@ -345,22 +382,28 @@
                             label: 'Email Tasks',
                             data: sessions.map(s => s.taskType === 'email' ? s.score : null),
                             borderColor: '#077F83',
-                            backgroundColor: 'rgba(7, 127, 131, 0.1)',
-                            tension: 0.3,
-                            fill: false,
+                            backgroundColor: 'rgba(7, 127, 131, 0.15)',
+                            tension: 0.4,
+                            fill: true,
                             pointRadius: 6,
                             pointHoverRadius: 8,
+                            pointBackgroundColor: '#077F83',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
                             spanGaps: true
                         },
                         {
                             label: 'Academic Discussion',
                             data: sessions.map(s => s.taskType === 'academic' ? s.score : null),
                             borderColor: '#2B8084',
-                            backgroundColor: 'rgba(43, 128, 132, 0.1)',
-                            tension: 0.3,
-                            fill: false,
+                            backgroundColor: 'rgba(43, 128, 132, 0.15)',
+                            tension: 0.4,
+                            fill: true,
                             pointRadius: 6,
                             pointHoverRadius: 8,
+                            pointBackgroundColor: '#2B8084',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2,
                             spanGaps: true
                         },
                         {
@@ -368,10 +411,13 @@
                             data: sessions.map(s => s.taskType === 'full-test' ? s.score : null),
                             borderColor: '#FFC107',
                             backgroundColor: 'rgba(255, 193, 7, 0.1)',
-                            tension: 0.3,
+                            tension: 0.4,
                             fill: false,
                             pointRadius: 8,
                             pointHoverRadius: 10,
+                            pointBackgroundColor: '#FFC107',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2.5,
                             borderDash: [5, 5],
                             spanGaps: true
                         }
@@ -388,18 +434,19 @@
                     },
                     plugins: {
                         legend: {
-                            display: true,
-                            labels: {
-                                color: '#8b949e',
-                                usePointStyle: true
-                            }
+                            display: false // We use our own premium HTML legend
                         },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
                             titleColor: '#fff',
-                            bodyColor: '#fff',
+                            bodyColor: '#e2e8f0',
+                            borderColor: 'rgba(255,255,255,0.1)',
+                            borderWidth: 1,
                             padding: 12,
-                            displayColors: true
+                            displayColors: true,
+                            boxPadding: 6,
+                            cornerRadius: 8,
+                            titleFont: { weight: 'bold' }
                         }
                     },
                     scales: {
@@ -407,18 +454,22 @@
                             beginAtZero: true,
                             max: 100,
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
                             },
                             ticks: {
-                                color: '#8b949e'
+                                color: '#94a3b8',
+                                padding: 10
                             }
                         },
                         x: {
                             grid: {
-                                color: 'rgba(255, 255, 255, 0.1)'
+                                color: 'rgba(255, 255, 255, 0.05)',
+                                drawBorder: false
                             },
                             ticks: {
-                                color: '#8b949e'
+                                color: '#94a3b8',
+                                padding: 10
                             }
                         }
                     }
@@ -426,7 +477,7 @@
             });
         }
 
-        // Scroll to session
+        // Scroll to session card
         function scrollToSession(sessionId) {
             const sessionCard = document.getElementById(`session-${sessionId}`);
             if (sessionCard) {
@@ -436,7 +487,7 @@
             }
         }
 
-        // Filter buttons
+        // Filter buttons click handler
         document.querySelectorAll('.filter-btn').forEach(btn => {
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
@@ -446,7 +497,7 @@
             });
         });
 
-        // Load sessions on page load
+        // Initial sessions fetch on page load
         loadSessions();
     </script>
 </body>

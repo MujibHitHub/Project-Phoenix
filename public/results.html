@@ -296,9 +296,17 @@
         <button class="btn-action" onclick="window.location.href='task-selection.html'">Practice Again</button>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
+        if (PhoenixAuth.isAuthenticated()) {
+            PhoenixAuth.requireAuth();
+        }
+
         // Load evaluation results
         const evaluation = JSON.parse(localStorage.getItem('lastEvaluation') || '{}');
+        const taskType = localStorage.getItem('lastTaskType') || 'email';
+        const userResponse = localStorage.getItem('lastUserResponse') || '';
+        const scenarioText = localStorage.getItem('lastScenario') || '';
         const username = localStorage.getItem('username') || 'Guest';
 
         if (username) {
@@ -347,6 +355,17 @@
 
             // Detailed feedback
             document.getElementById('detailedFeedback').textContent = evaluation.detailedFeedback;
+
+            if (PhoenixAuth.isAuthenticated()) {
+                PhoenixAuth.savePracticeSession({
+                    taskType,
+                    scenario: scenarioText,
+                    userResponse,
+                    evaluation,
+                    score: PhoenixAuth.scoreFromEvaluation(evaluation),
+                    feedback: PhoenixAuth.buildFeedbackFromEvaluation(evaluation)
+                }).catch((err) => console.error('Failed to save session:', err));
+            }
         } else if (evaluation && evaluation.overallScore) {
             // Support for legacy 0-100 scores
             const rawEquivalent = (evaluation.overallScore / 20).toFixed(1);
@@ -361,6 +380,17 @@
             document.getElementById('strengthsList').innerHTML = (evaluation.strengths || []).map(s => `<li>${s}</li>`).join('');
             document.getElementById('improvementsList').innerHTML = (evaluation.improvements || []).map(i => `<li>${i}</li>`).join('');
             document.getElementById('detailedFeedback').textContent = evaluation.detailedFeedback;
+
+            if (PhoenixAuth.isAuthenticated()) {
+                PhoenixAuth.savePracticeSession({
+                    taskType,
+                    scenario: scenarioText,
+                    userResponse,
+                    evaluation,
+                    score: PhoenixAuth.scoreFromEvaluation(evaluation),
+                    feedback: PhoenixAuth.buildFeedbackFromEvaluation(evaluation)
+                }).catch((err) => console.error('Failed to save session:', err));
+            }
         } else {
             // Fallback for missing evaluation
             document.querySelector('.results-container').innerHTML = `

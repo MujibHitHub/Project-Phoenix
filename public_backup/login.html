@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project Phoenix | Login</title>
+    <link rel="stylesheet" href="styles/login.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <div class="brand-logo">
+                <div class="logo-icon"></div>
+                <h1 id="formTitle">Sign In</h1>
+            </div>
+
+            <form id="authForm">
+                <div class="input-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required placeholder="Enter your username"
+                        minlength="3">
+                    <span class="input-hint" id="usernameHint"></span>
+                </div>
+
+                <div class="input-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required placeholder="Enter your password"
+                        minlength="6">
+                    <span class="input-hint" id="passwordHint"></span>
+                </div>
+
+                <div class="actions">
+                    <button type="submit" class="btn-primary" id="submitBtn">Sign In</button>
+                </div>
+
+                <div id="message" class="message"></div>
+            </form>
+
+            <p class="switch-mode">
+                <span id="switchText">New here?</span>
+                <a href="#" id="toggleMode">Create an account</a>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const authForm = document.getElementById('authForm');
+        const messageEl = document.getElementById('message');
+        const submitBtn = document.getElementById('submitBtn');
+        const formTitle = document.getElementById('formTitle');
+        const toggleModeLink = document.getElementById('toggleMode');
+        const switchText = document.getElementById('switchText');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameHint = document.getElementById('usernameHint');
+        const passwordHint = document.getElementById('passwordHint');
+
+        let isSignUpMode = false;
+
+        // Toggle between Sign In and Sign Up modes
+        toggleModeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isSignUpMode = !isSignUpMode;
+
+            if (isSignUpMode) {
+                formTitle.textContent = 'Create Account';
+                submitBtn.textContent = 'Sign Up';
+                switchText.textContent = 'Already have an account?';
+                toggleModeLink.textContent = 'Sign in';
+            } else {
+                formTitle.textContent = 'Sign In';
+                submitBtn.textContent = 'Sign In';
+                switchText.textContent = 'New here?';
+                toggleModeLink.textContent = 'Create an account';
+            }
+
+            // Clear form and messages
+            authForm.reset();
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+            usernameHint.textContent = '';
+            passwordHint.textContent = '';
+        });
+
+        // Input validation hints
+        usernameInput.addEventListener('input', () => {
+            if (isSignUpMode && usernameInput.value.length > 0 && usernameInput.value.length < 3) {
+                usernameHint.textContent = 'Username must be at least 3 characters';
+                usernameHint.style.color = '#ff6b6b';
+            } else {
+                usernameHint.textContent = '';
+            }
+        });
+
+        passwordInput.addEventListener('input', () => {
+            if (isSignUpMode && passwordInput.value.length > 0 && passwordInput.value.length < 6) {
+                passwordHint.textContent = 'Password must be at least 6 characters';
+                passwordHint.style.color = '#ff6b6b';
+            } else {
+                passwordHint.textContent = '';
+            }
+        });
+
+        // Form submission
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            // Validation for sign-up mode
+            if (isSignUpMode) {
+                if (username.length < 3) {
+                    messageEl.textContent = 'Username must be at least 3 characters';
+                    messageEl.className = 'message error';
+                    return;
+                }
+                if (password.length < 6) {
+                    messageEl.textContent = 'Password must be at least 6 characters';
+                    messageEl.className = 'message error';
+                    return;
+                }
+            }
+
+            // Loading state
+            const originalText = submitBtn.textContent;
+            submitBtn.innerHTML = `<span class="loader"></span> ${isSignUpMode ? 'Creating Account...' : 'Signing In...'}`;
+            submitBtn.disabled = true;
+            messageEl.textContent = '';
+            messageEl.className = 'message';
+
+            try {
+                const endpoint = isSignUpMode ? '/api/register' : '/api/login';
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                let data;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    throw new Error(
+                        `Server returned non-JSON response (${response.status}). ${text.slice(0, 120)}`
+                    );
+                }
+
+                if (data.success) {
+                    messageEl.textContent = isSignUpMode
+                        ? 'Account created successfully! You can now sign in.'
+                        : 'Login Successful! Redirecting...';
+                    messageEl.classList.add('success');
+
+                    if (isSignUpMode) {
+                        // Switch to login mode after successful registration
+                        setTimeout(() => {
+                            isSignUpMode = false;
+                            formTitle.textContent = 'Sign In';
+                            submitBtn.textContent = 'Sign In';
+                            switchText.textContent = 'New here?';
+                            toggleModeLink.textContent = 'Create an account';
+                            authForm.reset();
+                            messageEl.textContent = 'Account created! Please sign in.';
+                            messageEl.className = 'message success';
+                            submitBtn.disabled = false;
+                        }, 1500);
+                    } else {
+                        // Store username and redirect to dashboard after successful login
+                        localStorage.setItem('currentUser', username);
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    }
+                } else {
+                    throw new Error(data.message || (isSignUpMode ? 'Registration failed' : 'Login failed'));
+                }
+            } catch (err) {
+                messageEl.textContent = err.message;
+                messageEl.classList.add('error');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>

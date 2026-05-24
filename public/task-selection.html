@@ -6,12 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Phoenix | Select Task</title>
     <link rel="stylesheet" href="styles/dashboard.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Spline Viewer module script for 3D interactive background -->
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
     <style>
         .task-selection-container {
             max-width: 900px;
-            margin: 80px auto;
+            margin: 60px auto;
             padding: 20px;
+            animation: slideUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .page-header {
@@ -20,36 +34,42 @@
         }
 
         .page-header h1 {
-            font-size: 32px;
+            font-size: 34px;
+            font-weight: 800;
             margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--primary-teal), #2B8084);
+            background: linear-gradient(135deg, #ffffff 50%, var(--text-secondary));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             background-clip: text;
+            letter-spacing: -0.5px;
         }
 
         .page-header p {
             color: var(--text-secondary);
             font-size: 16px;
+            font-weight: 500;
         }
 
         .task-cards {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
             gap: 30px;
         }
 
         .task-card {
             background: var(--card-bg);
-            backdrop-filter: blur(12px);
-            border: 2px solid rgba(255, 255, 255, 0.1);
-            border-radius: 16px;
-            padding: 40px;
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 45px 40px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
             position: relative;
             overflow: hidden;
+            box-shadow: 0 15px 35px -10px rgba(0, 0, 0, 0.5),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
         }
 
         .task-card::before {
@@ -62,13 +82,14 @@
             background: linear-gradient(90deg, var(--primary-teal), #2B8084);
             transform: scaleX(0);
             transform-origin: left;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .task-card:hover {
-            border-color: var(--primary-teal);
+            border-color: var(--card-hover-border);
             transform: translateY(-5px);
-            box-shadow: 0 12px 24px rgba(7, 127, 131, 0.3);
+            box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6),
+                        0 0 20px rgba(7, 127, 131, 0.2);
         }
 
         .task-card:hover::before {
@@ -77,12 +98,19 @@
 
         .task-icon {
             font-size: 64px;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
+            filter: drop-shadow(0 4px 12px rgba(255, 255, 255, 0.1));
+            transition: transform 0.3s ease;
+        }
+
+        .task-card:hover .task-icon {
+            transform: scale(1.1);
         }
 
         .task-card h2 {
             font-size: 24px;
-            margin-bottom: 12px;
+            font-weight: 700;
+            margin-bottom: 14px;
             color: var(--text-primary);
         }
 
@@ -90,16 +118,19 @@
             color: var(--text-secondary);
             font-size: 14px;
             line-height: 1.6;
-            margin-bottom: 24px;
+            margin-bottom: 28px;
+            font-weight: 500;
         }
 
         .task-details {
             display: flex;
             justify-content: space-around;
-            margin-bottom: 24px;
-            padding: 16px 0;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 28px;
+            padding: 18px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            background: rgba(255, 255, 255, 0.01);
+            border-radius: 10px;
         }
 
         .detail-item {
@@ -107,58 +138,77 @@
         }
 
         .detail-label {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--text-secondary);
             text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 4px;
+            letter-spacing: 0.8px;
+            margin-bottom: 6px;
+            font-weight: 700;
         }
 
         .detail-value {
             font-size: 16px;
-            font-weight: 600;
-            color: var(--primary-teal);
+            font-weight: 700;
+            color: var(--primary-teal-hover);
         }
 
         .btn-select {
             width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, var(--primary-teal), #2B8084);
-            border: none;
-            border-radius: 10px;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-teal), #1c6265);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 12px;
             color: white;
             font-size: 16px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 4px 15px rgba(7, 127, 131, 0.3);
         }
 
-        .btn-select:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(7, 127, 131, 0.4);
+        .task-card:hover .btn-select {
+            background: linear-gradient(135deg, var(--primary-teal-hover), var(--primary-teal));
+            box-shadow: 0 8px 24px rgba(7, 127, 131, 0.4);
+            border-color: rgba(255, 255, 255, 0.2);
         }
 
         .btn-back {
             display: block;
             margin: 40px auto 0;
-            padding: 12px 30px;
-            background: transparent;
+            padding: 12px 32px;
+            background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--input-border);
-            border-radius: 8px;
+            border-radius: 10px;
             color: var(--text-primary);
             font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
         .btn-back:hover {
             border-color: var(--primary-teal);
-            color: var(--primary-teal);
+            color: var(--primary-teal-hover);
+            background: rgba(7, 127, 131, 0.05);
+            box-shadow: 0 0 15px rgba(7, 127, 131, 0.1);
         }
     </style>
 </head>
 
 <body>
+    <!-- 3D Spline Background -->
+    <div class="spline-container">
+        <spline-viewer id="splineScene" url="https://prod.spline.design/6Wq1Q7YTyMZO1gTh/scene.splinecode"></spline-viewer>
+    </div>
+
+    <!-- Suspense Fallback Loader Screen -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <span class="loader"></span>
+            <p>Loading Task Selection...</p>
+        </div>
+    </div>
+
     <div class="task-selection-container">
         <div class="page-header">
             <h1>Select Your Writing Task</h1>
@@ -170,8 +220,7 @@
             <div class="task-card" onclick="selectTask('email')">
                 <div class="task-icon">✉️</div>
                 <h2>Write an Email</h2>
-                <p>Write an email in response to a campus-related situation. Address specific requirements in an
-                    appropriate tone and format.</p>
+                <p>Write an email in response to a campus-related situation. Address specific requirements in an appropriate tone and format.</p>
                 <div class="task-details">
                     <div class="detail-item">
                         <div class="detail-label">Time Limit</div>
@@ -189,8 +238,7 @@
             <div class="task-card" onclick="selectTask('academic')">
                 <div class="task-icon">💬</div>
                 <h2>Academic Discussion</h2>
-                <p>Contribute to an online academic discussion by stating your opinion and supporting it with relevant
-                    reasons and examples.</p>
+                <p>Contribute to an online academic discussion by stating your opinion and supporting it with relevant reasons and examples.</p>
                 <div class="task-details">
                     <div class="detail-item">
                         <div class="detail-label">Time Limit</div>
@@ -208,7 +256,37 @@
         <button class="btn-back" onclick="goBack()">← Back to Dashboard</button>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
+        }
+
+        const currentUser = localStorage.getItem('currentUser') || localStorage.getItem('username');
+
+        // Loader Screen Transition
+        const spline = document.getElementById('splineScene');
+        const pageLoader = document.getElementById('pageLoader');
+        
+        if (spline) {
+            spline.addEventListener('load', () => {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            });
+        }
+
+        // Safety timeout to hide loader if Spline takes too long
+        setTimeout(() => {
+            if (pageLoader && pageLoader.style.display !== 'none') {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            }
+        }, 4000);
+
         function selectTask(taskType) {
             if (taskType === 'email') {
                 window.location.href = 'email-task.html';
@@ -219,12 +297,6 @@
 
         function goBack() {
             window.location.href = 'dashboard.html';
-        }
-
-        // Check if user is logged in
-        const currentUser = localStorage.getItem('currentUser');
-        if (!currentUser) {
-            window.location.href = 'login.html';
         }
     </script>
 </body>

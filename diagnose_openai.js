@@ -1,16 +1,29 @@
+require('dotenv').config();
 const fs = require('fs');
 
 async function test() {
     try {
-        const config = JSON.parse(fs.readFileSync('config.json', 'utf8'));
-        console.log('OpenAI Key:', config.OPENAI_API_KEY ? 'Present' : 'Missing');
+        let localConfig = {};
+        try {
+            if (fs.existsSync('config.json')) {
+                localConfig = JSON.parse(fs.readFileSync('config.json', 'utf8'));
+            }
+        } catch (e) {}
+
+        const openaiKey = process.env.OPENAI_API_KEY || localConfig.OPENAI_API_KEY;
+        console.log('OpenAI Key:', openaiKey ? 'Present' : 'Missing');
+
+        if (!openaiKey) {
+            console.error('No OpenAI API Key found in .env or config.json');
+            return;
+        }
 
         console.log('Testing OpenAI...');
         const oaRes = await fetch('https://api.openai.com/v1/chat/completions', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${config.OPENAI_API_KEY}`
+                'Authorization': `Bearer ${openaiKey}`
             },
             body: JSON.stringify({
                 model: "gpt-4o-mini",

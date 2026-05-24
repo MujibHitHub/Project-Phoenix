@@ -6,10 +6,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Project Phoenix | Login</title>
     <link rel="stylesheet" href="styles/login.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Spline Viewer module script for 3D interactive background -->
+    <script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.82/build/spline-viewer.js"></script>
 </head>
 
 <body>
+    <!-- 3D Spline Background -->
+    <div class="spline-container">
+        <spline-viewer id="splineScene" url="https://prod.spline.design/cAPscU-MuxjN26r7/scene.splinecode"></spline-viewer>
+    </div>
+
+    <!-- Suspense Fallback Loader Screen -->
+    <div id="pageLoader" class="page-loader">
+        <div class="loader-content">
+            <span class="loader"></span>
+            <p>Initializing 3D environment...</p>
+        </div>
+    </div>
+
     <div class="login-container">
         <div class="login-card">
             <div class="brand-logo">
@@ -19,8 +34,8 @@
 
             <form id="authForm">
                 <div class="input-group">
-                    <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required placeholder="Enter your username"
+                    <label for="username">Email</label>
+                    <input type="email" id="username" name="username" required placeholder="Enter your email"
                         minlength="3">
                     <span class="input-hint" id="usernameHint"></span>
                 </div>
@@ -46,6 +61,7 @@
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
     <script>
         const authForm = document.getElementById('authForm');
         const messageEl = document.getElementById('message');
@@ -57,6 +73,34 @@
         const passwordInput = document.getElementById('password');
         const usernameHint = document.getElementById('usernameHint');
         const passwordHint = document.getElementById('passwordHint');
+
+        // Loader Screen Transition
+        const spline = document.getElementById('splineScene');
+        const pageLoader = document.getElementById('pageLoader');
+        
+        if (spline) {
+            spline.addEventListener('load', () => {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            });
+        }
+
+        // Safety timeout to hide loader if Spline takes too long
+        setTimeout(() => {
+            if (pageLoader && pageLoader.style.display !== 'none') {
+                pageLoader.classList.add('fade-out');
+                setTimeout(() => {
+                    pageLoader.style.display = 'none';
+                }, 500);
+            }
+        }, 4000);
+
+        // Handle OAuth callback tokens if present
+        if (PhoenixAuth.handleOAuthCallbackFromUrl()) {
+            // Redirecting to dashboard
+        }
 
         let isSignUpMode = false;
 
@@ -89,7 +133,7 @@
         usernameInput.addEventListener('input', () => {
             if (isSignUpMode && usernameInput.value.length > 0 && usernameInput.value.length < 3) {
                 usernameHint.textContent = 'Username must be at least 3 characters';
-                usernameHint.style.color = '#ff6b6b';
+                usernameHint.style.color = '#f87171';
             } else {
                 usernameHint.textContent = '';
             }
@@ -98,7 +142,7 @@
         passwordInput.addEventListener('input', () => {
             if (isSignUpMode && passwordInput.value.length > 0 && passwordInput.value.length < 6) {
                 passwordHint.textContent = 'Password must be at least 6 characters';
-                passwordHint.style.color = '#ff6b6b';
+                passwordHint.style.color = '#f87171';
             } else {
                 passwordHint.textContent = '';
             }
@@ -112,8 +156,8 @@
 
             // Validation for sign-up mode
             if (isSignUpMode) {
-                if (username.length < 3) {
-                    messageEl.textContent = 'Username must be at least 3 characters';
+                if (!username.includes('@')) {
+                    messageEl.textContent = 'Please enter a valid email address';
                     messageEl.className = 'message error';
                     return;
                 }
@@ -139,16 +183,40 @@
                     body: JSON.stringify({ username, password })
                 });
 
-                const data = await response.json();
+                let data;
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    data = await response.json();
+                } else {
+                    const text = await response.text();
+                    throw new Error(
+                        `Server returned non-JSON response (${response.status}). ${text.slice(0, 120)}`
+                    );
+                }
 
                 if (data.success) {
+                    if (data.access_token) {
+                        PhoenixAuth.saveAuthSession(data);
+                    }
+
+                    if (isSignUpMode && data.requiresConfirmation) {
+                        messageEl.textContent = data.message || 'Account created. Please confirm your email, then sign in.';
+                        messageEl.className = 'message success';
+                        submitBtn.textContent = originalText;
+                        submitBtn.disabled = false;
+                        return;
+                    }
+
                     messageEl.textContent = isSignUpMode
-                        ? 'Account created successfully! You can now sign in.'
+                        ? 'Account created successfully! Redirecting...'
                         : 'Login Successful! Redirecting...';
                     messageEl.classList.add('success');
 
-                    if (isSignUpMode) {
-                        // Switch to login mode after successful registration
+                    if (isSignUpMode && data.access_token) {
+                        setTimeout(() => {
+                            window.location.href = 'dashboard.html';
+                        }, 1000);
+                    } else if (isSignUpMode) {
                         setTimeout(() => {
                             isSignUpMode = false;
                             formTitle.textContent = 'Sign In';
@@ -161,8 +229,6 @@
                             submitBtn.disabled = false;
                         }, 1500);
                     } else {
-                        // Store username and redirect to dashboard after successful login
-                        localStorage.setItem('currentUser', username);
                         setTimeout(() => {
                             window.location.href = 'dashboard.html';
                         }, 1000);
@@ -172,7 +238,7 @@
                 }
             } catch (err) {
                 messageEl.textContent = err.message;
-                messageEl.classList.add('error');
+                messageEl.className = 'message error';
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             }

@@ -1,0 +1,328 @@
+:root {
+    --primary-teal: #066a6e;
+    --secondary-teal: #044d50;
+    --nav-blue: #007bff;
+    --timer-color: #333;
+    --bg-light: #f4f4f4;
+    --border-color: #ddd;
+    --text-primary: #333;
+    --text-secondary: #666;
+    --editor-active: #0a8485;
+    --editor-inactive: #e0e0e0;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Open Sans', sans-serif;
+    background-color: #fff;
+    color: var(--text-primary);
+    overflow-x: hidden;
+}
+
+/* Header Toolbar (Top) */
+.header-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    /* Align Next to the right */
+    align-items: center;
+    background-color: var(--primary-teal);
+    height: 50px;
+    padding: 0 16px;
+}
+
+.logo-section {
+    margin-right: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: white;
+    font-weight: 700;
+}
+
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.btn-utility-header {
+    background: transparent;
+    border: none;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    font-size: 11px;
+    cursor: pointer;
+    opacity: 0.9;
+}
+
+.btn-utility-header:hover {
+    opacity: 1;
+}
+
+.btn-next-header {
+    background-color: #fff;
+    color: var(--primary-teal);
+    border: none;
+    border-radius: 20px;
+    padding: 6px 24px;
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: 10px;
+}
+
+.btn-next-header:hover {
+    background-color: #f0f0f0;
+}
+
+/* Secondary Info Bar */
+.section-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+    border-bottom: 1px solid #ddd;
+    height: 36px;
+    padding: 0 20px;
+    font-size: 14px;
+}
+
+.section-info {
+    font-weight: 400;
+    color: #333;
+}
+
+.timer-area {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.time-value {
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.toggle-link {
+    color: var(--primary-teal);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-weight: 600;
+}
+
+/* Main Layout Centered */
+.task-container-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px 0;
+}
+
+#task-content-area {
+    width: 100%;
+    max-width: 1200px;
+    /* Centered narrow view */
+    display: flex;
+    gap: 30px;
+}
+
+/* Panels */
+.scenario-panel {
+    flex: 4;
+    padding: 0 20px;
+    border-right: 1px solid #eee;
+    height: calc(100vh - 120px);
+    overflow-y: auto;
+}
+
+.response-panel {
+    flex: 6;
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Headings */
+.task-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-top: 0;
+    margin-bottom: 20px;
+}
+
+/* Editor Styling */
+.editor-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    background-color: #f9f9f9;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.editor-btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+.editor-btn {
+    border: none;
+    border-radius: 4px;
+    padding: 6px 18px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-active {
+    background-color: var(--editor-active);
+    color: white;
+}
+
+.btn-inactive {
+    background-color: var(--editor-inactive);
+    color: #555;
+}
+
+.btn-inactive:hover {
+    background-color: #d0d0d0;
+}
+
+.response-editor {
+    width: 100%;
+    flex-grow: 1;
+    min-height: 400px;
+    padding: 15px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 15px;
+    line-height: 1.6;
+    resize: none;
+    box-sizing: border-box;
+}
+
+/* Email Specific */
+.email-meta {
+    margin-bottom: 15px;
+    font-size: 14px;
+}
+
+.email-meta div {
+    margin-bottom: 5px;
+}
+
+.email-meta strong {
+    font-weight: 700;
+}
+
+/* Academic Discussion Specific */
+.discussion-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.discussion-post {
+    display: flex;
+    gap: 15px;
+}
+
+.author-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+}
+
+.author-name {
+    font-size: 13px;
+    font-weight: 700;
+    text-align: center;
+    color: var(--text-primary);
+    width: 80px;
+}
+
+.author-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-content {
+    font-size: 15px;
+    line-height: 1.5;
+    padding-top: 5px;
+}
+
+.task-instruction {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 25px;
+}
+
+.task-instruction p {
+    margin: 10px 0;
+}
+
+.instruction-bullets {
+    margin: 10px 0;
+    padding-left: 20px;
+    list-style-type: disc;
+}
+
+.instruction-bullets li {
+    margin-bottom: 5px;
+}
+
+.professor-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 25px 0;
+}
+
+.professor-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin: 20px 0;
+}
+
+.professor-image {
+    width: 150px;
+    height: 150px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #eee;
+}
+
+.scenario-text {
+    line-height: 1.6;
+}
+
+/* General Utilities */
+.hidden {
+    display: none !important;
+}
+
+.word-count-display {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--primary-teal);
+    font-weight: 600;
+}

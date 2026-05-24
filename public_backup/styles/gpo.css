@@ -1,0 +1,344 @@
+@font-face {
+  font-family: "Green Narrow";
+  src: url("../assets/fonts/Greet_Narrow/Static/GreetNarrow-Bold.ttf");
+}
+
+@font-face {
+  font-family: "Green Standard";
+  src: url("../assets/fonts/Greet_Standard/Static/GreetStandard-Regular.ttf");
+}
+
+@font-face {
+  font-family: "Green Standard Medium";
+  src: url("../assets/fonts/Greet_Standard/Static/GreetStandard-Medium.ttf");
+}
+
+@font-face {
+  font-family: "Green Standard Regular";
+  src: url("../assets/fonts/Greet_Standard/Static/GreetStandard-Regular.ttf");
+}
+
+.font-green-standard-medium {
+  font-family: "Green Standard Medium";
+}
+
+:root {
+  --default-primary-text-color: #3d3d3d;
+  --default-border-bottom-color: #d7d7d7;
+  --default-font-family: "Open Sans";
+  --default-disabled-background-btn-color: #b5b5b5;
+  --default-primary-btn-color: #077f83;
+  --volume-slider-bar-height: 1.2rem;
+  --volume-slider-filled-color: #077f83;
+  --volume-slider-color: #00565d;
+  --default-737373-color: #737373;
+  --default-seconday-btn-color: #066a6e;
+  --default-btn-font-weight: 700;
+  --default-600-font-weight: 600;
+}
+
+.btn-continue-gpo {
+  border-radius: 1rem;
+  background-color: var(--default-primary-btn-color);
+  color: #fff;
+  font-family: var(--default-font-family);
+  font-weight: var(--default-btn-font-weight);
+}
+
+.btn-continue-gpo:hover {
+  background-color: white;
+  color: #066a6e;
+  border: 2px solid #066a6e;
+  background-image: none;
+  border-radius: 1rem;
+}
+
+.badge {
+  color: #ff6f61;
+  border: 1.5px solid #ff6f61;
+  display: inline-block;
+  padding: 1rem 2rem;
+  font-size: 12px;
+  border-radius: 4px;
+  /* margin-bottom: 10px; */
+  background-color: white;
+  font-family: "Green Standard";
+  letter-spacing: 2px;
+}
+
+.cefr {
+  font-family: "Green Standard";
+  font-size: 20px;
+  color: #000000;
+}
+
+.score-legend-btn {
+  letter-spacing: 2px;
+  border: 2px solid #343579;
+  background: none;
+  padding: 1.1rem 2.2rem;
+  margin-top: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  position: relative;
+  /* top: 1rem; */
+  font-family: "Green Standard Medium";
+  color: #343579;
+  font-weight: bold;
+  /* width: 18rem; */
+}
+
+.scores {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 5px;
+  padding: 0rem 2rem 2rem 2rem;
+}
+
+.score-box {
+  background: #edeaff;
+  padding: 20px;
+  width: 21rem;
+  height: 9rem;
+}
+
+.score-box h4 {
+  margin: 0;
+  font-size: 16px;
+}
+
+.score-box p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #444;
+}
+
+.header-text-container {
+  text-align: center;
+}
+
+.scoring-container {
+  border: 1px solid #d5d6d6;
+  position: absolute;
+  left: 4rem;
+  bottom: 12rem;
+  text-align: center;
+  font-family: "Green Standard Regular";
+}
+
+*,
+*:after,
+*:before {
+  box-sizing: border-box;
+}
+
+.multigraph {
+  width: 300px;
+  height: 120px;
+  position: absolute;
+  top: 45%;
+  left: 50%;
+  margin: -150px;
+}
+
+.multigraph:before {
+  content: "";
+  width: 300px;
+  height: 150px;
+  position: absolute;
+  border: 30px solid rgba(0, 0, 0, 0.1);
+  border-radius: 300px 300px 0 0;
+  border-bottom: none;
+}
+
+.graph {
+  width: 300px;
+  height: 150px;
+  position: absolute;
+  overflow: hidden;
+}
+
+.graph-line {
+  width: 300px;
+  height: 150px;
+  position: absolute;
+  overflow: hidden;
+}
+
+.graph:before,
+.graph:after {
+  width: 300px;
+  height: 150px;
+  position: absolute;
+  top: 100%;
+  border: 30px solid #ffffff;
+  content: "";
+  border-radius: 0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+
+.graph-line:before,
+.graph-line:after {
+  width: 300px;
+  height: 150px;
+  position: absolute;
+  top: 100%;
+  border: 30px solid #9196ff;
+  content: "";
+  border-radius: 0 0 300px 300px;
+  border-top: none;
+  animation: demo 3s;
+  transform-origin: center top;
+}
+
+/* .graph:after {
+  transform: rotate(90deg);
+} */
+
+@keyframes demo {
+  0% {
+    transform: rotate(0deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+}
+
+.graph-container {
+  padding-top: 12rem;
+}
+
+.cefr-container {
+  text-align: center;
+  position: relative;
+  font-family: "Green Standard Regular";
+  margin-top: 3.5rem;
+  /* padding-bottom: 2rem; */
+}
+
+.graph-value {
+  position: absolute;
+  top: 7rem;
+  left: 10.3rem;
+  text-align: center;
+  font-size: 2rem;
+}
+
+.graph-question {
+  font-family: "Green Standard Regular";
+}
+
+.header-text-container h1 {
+  font-family: "Green Narrow";
+  font-size: 44px;
+  margin-top: 10px;
+}
+
+.header-text-container h3 {
+  font-family: "Green Narrow";
+  font-size: 20px;
+}
+
+.graph-marks {
+  font-family: "Green Narrow";
+  font-size: 32px;
+}
+
+.score-box-container .score-icon h4 {
+  font-size: 16px;
+  font-family: "Green Standard Regular";
+}
+
+.close-container {
+  font-family: "Green Standard Regular";
+  text-align: center;
+  position: relative;
+  bottom: -18rem;
+  padding: 1rem 2rem 0rem 2rem;
+}
+
+.close-button {
+  background-color: #343579;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  font-size: 16px;
+  cursor: pointer;
+  /* border-radius: 4px; */
+  /* margin-top: 20px; */
+}
+
+.progress-container {
+  position: relative;
+}
+
+.progress-bar {}
+
+.progress-bar:before {
+  position: absolute;
+  left: 2px;
+  bottom: 60px;
+  font-size: 12px;
+  color: rgba(98, 107, 114, 1);
+}
+
+.progress-bar:after {
+  position: absolute;
+  right: -6px;
+  bottom: 60px;
+  font-size: 12px;
+  color: rgba(98, 107, 114, 1);
+}
+
+.widget {
+  justify-items: center;
+  position: relative;
+  right: 13rem;
+  bottom: 14rem;
+}
+
+.points {
+  position: absolute;
+  margin: 0 auto;
+  left: 0;
+  right: 0;
+  bottom: 60px;
+  text-align: center;
+  text-transform: uppercase;
+  color: rgba(98, 107, 114, 1);
+  font-size: 12px;
+}
+
+.close-container p {
+  font-size: 20px;
+}
+
+.quit-test {
+  text-align: center;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  font-size: 22px;
+  color: #4d4d4d;
+  transform: translate(-50%, -50%);
+}
+
+.score-box b {
+  font-size: 28px;
+  font-family: "Green Narrow";
+  position: relative;
+  top: 0.5rem;
+}
+
+.score-icon {
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  position: relative;
+  margin: auto !important;
+  left: 5rem;
+}
