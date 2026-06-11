@@ -298,8 +298,8 @@
 
     <script src="js/auth.js"></script>
     <script>
-        if (PhoenixAuth.isAuthenticated()) {
-            PhoenixAuth.requireAuth();
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
         }
 
         // Load evaluation results

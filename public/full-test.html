@@ -22,6 +22,12 @@
         </div>
     </div>
 
+    <script src="js/auth.js"></script>
+    <script>
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
+        }
+    </script>
     <script src="full-test.js"></script>
 </body>
 

@@ -179,6 +179,63 @@ app.get('/api/auth/callback', async (req, res) => {
     }
 });
 
+// Refresh Session Endpoint
+app.post('/api/refresh', async (req, res) => {
+    try {
+        if (!supabase) {
+            return res.status(500).json({ success: false, message: 'Supabase not configured' });
+        }
+        const { refresh_token } = req.body;
+        if (!refresh_token) {
+            return res.status(400).json({ success: false, message: 'Refresh token is required' });
+        }
+        const { data, error } = await supabase.auth.refreshSession({ refresh_token });
+        if (error) {
+            return res.status(401).json({ success: false, message: error.message });
+        }
+        res.json({
+            success: true,
+            access_token: data.session.access_token,
+            refresh_token: data.session.refresh_token,
+            user_id: data.user.id,
+            email: data.user.email
+        });
+    } catch (e) {
+        console.error('Refresh error:', e);
+        res.status(500).json({ success: false, message: 'Refresh failed' });
+    }
+});
+
+// Google OAuth login initiator
+app.get('/api/auth/login-google', async (req, res) => {
+    try {
+        if (!supabase) {
+            return res.status(500).json({ success: false, message: 'Supabase not configured' });
+        }
+        
+        // Dynamically build redirect URL based on request host
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
+        const host = req.get('host');
+        const redirectTo = `${protocol}://${host}/api/auth/callback`;
+        
+        const { data, error } = await supabase.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo
+            }
+        });
+        
+        if (error) {
+            return res.status(400).json({ success: false, message: error.message });
+        }
+        
+        res.redirect(data.url);
+    } catch (e) {
+        console.error('OAuth initiation failed:', e);
+        res.status(500).json({ success: false, message: 'OAuth initiation failed' });
+    }
+});
+
 async function getUserProfile(userId) {
     const { data: profile } = await supabase
         .from('user_profiles')

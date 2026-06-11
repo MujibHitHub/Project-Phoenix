@@ -409,6 +409,9 @@
 
     <script src="js/auth.js"></script>
     <script>
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
+        }
         const RUBRIC_EMAIL = `GENERAL DESCRIPTION of Write an Email task:
 Score 5: A fully successful response
 The response is effective, is clearly expressed, and shows consistent facility in the use of language.

@@ -40,13 +40,104 @@
         return !!getAccessToken();
     }
 
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function isTokenExpired(token) {
+        const payload = parseJwt(token);
+        if (!payload || !payload.exp) return true;
+        const currentTime = Math.floor(Date.now() / 1000);
+        // Expired if within 5 minutes of expiration time
+        return payload.exp < (currentTime + 300);
+    }
+
     function requireAuth() {
         if (!isAuthenticated()) {
-            window.location.href = 'login.html';
+            if (window.top !== window.self) {
+                window.top.location.href = 'login.html';
+            } else {
+                window.location.href = 'login.html';
+            }
             return false;
         }
         return true;
     }
+
+    // Intercept fetch to automatically refresh expired tokens or redirect on 401
+    const originalFetch = window.fetch;
+    window.fetch = async function (resource, options = {}) {
+        const urlStr = typeof resource === 'string' ? resource : (resource.url || '');
+        
+        // Only run silent refresh check for API calls (excluding auth endpoints themselves)
+        if (urlStr.includes('/api/') && !urlStr.includes('/api/login') && !urlStr.includes('/api/register') && !urlStr.includes('/api/refresh')) {
+            const token = localStorage.getItem(AUTH_KEYS.access);
+            if (token && isTokenExpired(token)) {
+                const refreshToken = localStorage.getItem(AUTH_KEYS.refresh);
+                if (refreshToken) {
+                    try {
+                        const refreshRes = await originalFetch('/api/refresh', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ refresh_token: refreshToken })
+                        });
+                        if (refreshRes.ok) {
+                            const refreshData = await refreshRes.json();
+                            if (refreshData.success) {
+                                saveAuthSession(refreshData);
+                                // Update Authorization header in options
+                                if (!options.headers) {
+                                    options.headers = {};
+                                }
+                                if (options.headers instanceof Headers) {
+                                    options.headers.set('Authorization', `Bearer ${refreshData.access_token}`);
+                                } else if (Array.isArray(options.headers)) {
+                                    const idx = options.headers.findIndex(h => h[0].toLowerCase() === 'authorization');
+                                    if (idx !== -1) options.headers[idx][1] = `Bearer ${refreshData.access_token}`;
+                                    else options.headers.push(['Authorization', `Bearer ${refreshData.access_token}`]);
+                                } else {
+                                    options.headers['Authorization'] = `Bearer ${refreshData.access_token}`;
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error('Silent session refresh failed:', e);
+                    }
+                }
+            }
+        }
+
+        const response = await originalFetch(resource, options);
+
+        // Global 401 interceptor
+        if (response.status === 401 && urlStr.includes('/api/')) {
+            const clone = response.clone();
+            try {
+                const data = await clone.json();
+                if (data.message === 'Invalid access token' || data.message === 'JWT expired' || data.message === 'fetch failed') {
+                    clearAuthSession();
+                    if (window.top !== window.self) {
+                        window.top.location.href = 'login.html';
+                    } else {
+                        window.location.href = 'login.html';
+                    }
+                }
+            } catch (err) {
+                // Not JSON or other error
+            }
+        }
+
+        return response;
+    };
 
     function buildFeedbackFromEvaluation(evaluation) {
         const breakdown = evaluation.breakdown || {};

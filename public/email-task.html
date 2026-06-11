@@ -72,6 +72,9 @@
 
     <script src="js/auth.js"></script>
     <script>
+        if (!PhoenixAuth.requireAuth()) {
+            throw new Error('Auth required');
+        }
         const params = new URLSearchParams(window.location.search);
         let time = 420; // 7 minutes
         let timerInterval;
